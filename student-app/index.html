@@ -1,0 +1,3050 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Campus Canteen — Order fresh food from your college canteen. Browse menu, budget meals, track orders.">
+    <title>Campus Canteen — Student Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+
+<body>
+
+    <!-- Animated background canvas (blobs only — no stripes, no lines) -->
+    <div class="bg-canvas" id="bgCanvas">
+        <div class="bg-blob bg-blob-1"></div>
+        <div class="bg-blob bg-blob-2"></div>
+        <div class="bg-blob bg-blob-3"></div>
+        <div class="bg-blob bg-blob-4"></div>
+    </div>
+
+
+    <!-- ========== AUTH SCREEN ========== -->
+    <div class="login-container" id="authContainer">
+        <div class="login-box">
+            <h2 id="authTitle">Welcome Back</h2>
+            <p class="login-tagline">Sign in to your student account</p>
+
+            <div class="error-message" id="authError"></div>
+            <div class="success-message" id="authSuccess"></div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <a href="#" class="forgot-link" id="forgotPasswordLink"
+                    onclick="showForgotPassword(); return false;">Forgot Password?</a>
+                <button type="submit" class="btn-primary">Sign In</button>
+            </form>
+
+            <!-- ── FORGOT PASSWORD: Step 1 — Enter Email ── -->
+            <form id="forgotStep1Form" style="display:none;">
+                <!-- Step indicator -->
+                <div class="fp-steps">
+                    <div class="fp-step-dot active" id="fpDot1"></div>
+                    <div class="fp-step-dot" id="fpDot2"></div>
+                    <div class="fp-step-dot" id="fpDot3"></div>
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="fpEmail" placeholder="your@email.com" required>
+                </div>
+                <button type="submit" class="btn-primary">Send OTP</button>
+                <a class="back-to-login" onclick="showLoginForm()">← Back to Sign In</a>
+            </form>
+
+            <!-- ── FORGOT PASSWORD: Step 2 — Verify OTP ── -->
+            <form id="forgotStep2Form" style="display:none;">
+                <div class="fp-steps">
+                    <div class="fp-step-dot done" id="fpDot1b"></div>
+                    <div class="fp-step-dot active" id="fpDot2b"></div>
+                    <div class="fp-step-dot" id="fpDot3b"></div>
+                </div>
+                <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;text-align:center;">
+                    OTP sent to <strong id="fpEmailDisplay"></strong>
+                </p>
+                <div class="input-group">
+                    <label>6-Digit OTP</label>
+                    <input type="text" id="fpOtpCode" class="otp-input" placeholder="000000" maxlength="6" required
+                        autocomplete="one-time-code">
+                </div>
+                <button type="submit" class="btn-primary">Verify OTP</button>
+                <div class="resend-row">
+                    <button type="button" class="resend-btn-link" id="fpResendBtn" onclick="fpResendOtp()">Resend
+                        OTP</button>
+                    <span class="resend-timer" id="fpResendTimer" style="display:none;"></span>
+                </div>
+                <a class="back-to-login" onclick="showForgotPassword()">← Back</a>
+            </form>
+
+            <!-- ── FORGOT PASSWORD: Step 3 — New Password ── -->
+            <form id="forgotStep3Form" style="display:none;">
+                <div class="fp-steps">
+                    <div class="fp-step-dot done" id="fpDot1c"></div>
+                    <div class="fp-step-dot done" id="fpDot2c"></div>
+                    <div class="fp-step-dot active" id="fpDot3c"></div>
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="fpNewPassword" placeholder="Min 6 characters" minlength="6" required>
+                </div>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="fpConfirmPassword" placeholder="Repeat password" minlength="6" required>
+                </div>
+                <button type="submit" class="btn-primary">Save Password 🔒</button>
+                <a class="back-to-login" onclick="showForgotOtpForm()">← Back</a>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" style="display:none;">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signupName" placeholder="John Doe" required>
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" placeholder="your@email.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Phone</label>
+                    <input type="tel" id="signupPhone" placeholder="+91 XXXXX XXXXX" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" placeholder="Min 6 characters" required>
+                </div>
+                <button type="submit" class="btn-primary">Create Account</button>
+            </form>
+
+            <!-- OTP Verification Form -->
+            <form id="verifyForm" style="display:none;">
+                <p class="verification-info" style="margin-bottom:16px; font-size:14px; color:var(--text-2);">
+                    We've sent a 6-digit verification code to <strong id="verifyEmailDisplay"></strong>
+                </p>
+                <div class="input-group">
+                    <label>OTP Code</label>
+                    <input type="text" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6" required
+                        style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:700;">
+                </div>
+                <button type="submit" class="btn-primary">Verify & Login</button>
+                <div style="margin-top:16px; text-align:center;">
+                    <a href="#" id="resendBtn"
+                        style="font-size:13px; color:var(--primary); font-weight:600; text-decoration:none;">Resend
+                        Code</a>
+                </div>
+            </form>
+
+            <div class="toggle-form">
+                <span id="toggleText">Don't have an account? </span>
+                <a href="#" id="toggleBtn">Sign Up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MAIN APP ========== -->
+    <div class="app-container" id="appContainer">
+
+        <!-- HEADER -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="header-badge">Campus Canteen</div>
+                <h1>Good Food, Fast</h1>
+                <p>Welcome back, <span id="userName"></span> — what are you craving today?</p>
+            </div>
+            <div class="header-actions">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar" onclick="toggleUserDropdown()">
+                        <span id="userInitials"></span>
+                    </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">Account</div>
+                        <div class="dropdown-item" onclick="showEditProfile()">Edit Profile</div>
+                        <div class="dropdown-item" onclick="showChangePassword()">Change Password</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-header">Payment</div>
+                        <div class="dropdown-item" onclick="showPaymentHistory()">Payment History</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-header">Support</div>
+                        <div class="dropdown-item" onclick="showFeedback()">Send Feedback</div>
+                        <div class="dropdown-item" onclick="showCompliance()">Terms &amp; Privacy</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" onclick="logout()">Logout</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEARCH + FILTERS -->
+        <div class="search-and-filter-section">
+            <div class="search-container">
+                <span class="search-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </span>
+                <input type="text" class="search-box" id="menuSearch" placeholder="Search for your favourite dish..."
+                    onkeyup="searchMenu(this.value)">
+                <button class="search-budget-btn" type="button" onclick="switchTab(null,'budget')"
+                    aria-label="Open budget mode">
+                    Budget
+                </button>
+            </div>
+            <div class="category-filters" id="categoryFilters">
+                <button class="category-filter-btn active" data-category="all">All Items</button>
+                <button class="category-filter-btn" data-category="Beverages & Snacks">Beverages &amp; Snacks</button>
+                <button class="category-filter-btn" data-category="Tiffin / Parotta Varieties">Tiffin / Parotta</button>
+                <button class="category-filter-btn" data-category="Dosa & Egg Items">Dosa &amp; Egg</button>
+                <button class="category-filter-btn" data-category="Rice & Noodles">Rice &amp; Noodles</button>
+                <button class="category-filter-btn" data-category="Fast Food & Savouries">Fast Food</button>
+                <button class="category-filter-btn" data-category="Bakery & Sweets">Bakery &amp; Sweets</button>
+            </div>
+        </div>
+
+        <!-- NAV TABS —— Budget tab removed; accessible via search bar chip -->
+        <div class="nav-tabs-wrapper">
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="switchTab(event,'menu')">Menu</button>
+                <button class="tab-btn" onclick="switchTab(event,'cart')">Cart (<span id="cartCount">0</span>)</button>
+                <button class="tab-btn" onclick="switchTab(event,'active')">Active Orders</button>
+                <button class="tab-btn" onclick="switchTab(event,'completed')">Completed</button>
+            </div>
+        </div>
+
+        <!-- BUDGET TAB -->
+        <div class="tab-content" id="budgetTab">
+            <div class="budget-mode-container" id="budgetMode">
+                <div class="budget-mode-header">
+                    <div class="budget-mode-title">Budget Mode</div>
+                    <div class="budget-mode-subtitle">Enter your budget and we'll find the best meal combos for you
+                    </div>
+                </div>
+                <div class="budget-input-group">
+                    <div class="budget-input-wrapper">
+                        <span class="budget-currency">₹</span>
+                        <input type="number" id="budgetInput" class="budget-input"
+                            placeholder="Enter your budget (e.g. 100)" min="1">
+                    </div>
+                    <button class="suggest-btn" onclick="generateBudgetCombos()">Suggest Combos</button>
+                </div>
+                <div id="budgetRecommendations" class="recommendations-grid">
+                    <div class="no-results-msg">
+                        💡 Enter your budget above to see smart meal suggestions within your price range!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MENU TAB -->
+        <div class="tab-content active" id="menuTab">
+            <div class="menu-grid" id="menuGrid">
+                <!-- Menu items injected by JS -->
+            </div>
+        </div>
+
+        <!-- CART TAB -->
+        <div class="tab-content" id="cartTab">
+            <div class="cart-page-layout">
+
+                <!-- Items panel -->
+                <div class="cart-items-panel">
+                    <div class="cart-panel-heading">
+                        <span>🛒 Your Cart</span>
+                        <span class="cart-count-pill" id="cartItemCount">0</span>
+                    </div>
+                    <div class="cart-items-inner">
+                        <div id="cartItems">
+                            <div class="section-empty">
+                                <div class="cart-empty-icon">🛒</div>
+                                <p>Your cart is empty</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sticky summary panel -->
+                <div class="cart-sticky-panel">
+                    <div class="cart-summary-card" id="cartTotal" style="display:none;">
+                        <div class="cart-summary-title">Order Summary</div>
+                        <div class="cart-summary-row">
+                            <span>Subtotal</span>
+                            <span>₹<span id="subtotal">0</span></span>
+                        </div>
+                        <div class="cart-summary-row grand">
+                            <span>Total</span>
+                            <span>₹<span id="total">0</span></span>
+                        </div>
+                        <button type="button" class="checkout-btn" onclick="checkout()">Proceed to Checkout →</button>
+                    </div>
+                    <!-- Empty state placeholder so layout doesn't collapse -->
+                    <div id="cartSummaryEmpty" style="display:none;"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ACTIVE ORDERS TAB -->
+        <div class="tab-content" id="activeTab">
+            <div class="orders-container" id="activeOrders">
+                <p class="section-empty">No active orders — go order something delicious! 🍔</p>
+            </div>
+        </div>
+
+        <!-- COMPLETED ORDERS TAB -->
+        <div class="tab-content" id="completedTab">
+            <div class="orders-container" id="completedOrders">
+                <p class="section-empty">No completed orders yet</p>
+            </div>
+        </div>
+
+    </div><!-- /app-container -->
+
+    <!-- QR MODAL -->
+    <div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQRModal(event)">
+        <div class="qr-modal-content" onclick="event.stopPropagation()">
+            <div class="qr-modal-header">
+                <h2 class="qr-modal-title">🎫 Order QR Code</h2>
+                <button class="qr-close-btn" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="qr-modal-body">
+                <img id="qrCodeImage" class="qr-code-image" src="" alt="Order QR Code">
+                <div class="qr-order-info">
+                    <div class="qr-order-id" id="qrOrderId">Order #ORD_123456</div>
+                    <div class="qr-instruction">📱 Show this QR code to the vendor to collect your order</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div class="modal" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit Profile</h3>
+                <button class="close-modal" onclick="closeModal('editProfileModal')">&times;</button>
+            </div>
+            <div class="error-message" id="editProfileError"></div>
+            <div class="success-message" id="editProfileSuccess"></div>
+            <form id="editProfileForm">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editName" required>
+                </div>
+
+                <!-- ── Profile Picture Upload (Cloudinary) ── -->
+                <div class="profile-upload-section">
+                    <span class="profile-upload-label">Profile Picture</span>
+                    <div class="profile-pic-preview-wrap">
+                        <img id="profilePicPreview" class="profile-pic-preview" src="" alt="Profile Preview"
+                            onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=default'">
+                    </div>
+                    <div class="upload-drop-zone" id="uploadDropZone">
+                        <input type="file" id="profilePicFile" accept="image/jpeg,image/png,image/webp"
+                            title="Choose profile picture">
+                        <span class="upload-drop-icon">📷</span>
+                        <div class="upload-drop-text">Click or drag & drop to upload</div>
+                        <div class="upload-drop-hint">JPG, PNG, WEBP · Max 5 MB</div>
+                    </div>
+                    <div class="upload-progress-wrap" id="uploadProgressWrap">
+                        <div class="upload-progress-bar">
+                            <div class="upload-progress-fill" id="uploadProgressFill"></div>
+                        </div>
+                        <div class="upload-progress-text" id="uploadProgressText">Uploading...</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div class="modal" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔒 Change Password</h3>
+                <button class="close-modal" onclick="closeModal('changePasswordModal')">&times;</button>
+            </div>
+            <div class="error-message" id="changePasswordError"></div>
+            <div class="success-message" id="changePasswordSuccess"></div>
+            <form id="changePasswordForm">
+                <div class="input-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="newPassword" required minlength="6">
+                </div>
+                <div class="input-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirmPassword" required minlength="6">
+                </div>
+                <button type="submit" class="btn-primary">Change Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAYMENT HISTORY MODAL -->
+    <div class="modal" id="paymentHistoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Payment History</h3>
+                <button class="close-modal" onclick="closeModal('paymentHistoryModal')">&times;</button>
+            </div>
+            <p style="color:var(--text-2);margin-bottom:16px;font-size:14px;">Last 7 days transactions</p>
+            <div id="paymentHistoryContent">
+                <p class="section-empty">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEEDBACK MODAL -->
+    <div class="modal" id="feedbackModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Send Feedback</h3>
+                <button class="close-modal" onclick="closeModal('feedbackModal')">&times;</button>
+            </div>
+            <div class="error-message" id="feedbackError"></div>
+            <div class="success-message" id="feedbackSuccess"></div>
+            <form id="feedbackForm">
+                <div class="input-group">
+                    <label>Rate Your Experience</label>
+                    <div class="star-rating" id="starRating">
+                        <span class="star" data-rating="1">★</span>
+                        <span class="star" data-rating="2">★</span>
+                        <span class="star" data-rating="3">★</span>
+                        <span class="star" data-rating="4">★</span>
+                        <span class="star" data-rating="5">★</span>
+                    </div>
+                    <input type="hidden" id="feedbackRating" value="0" required>
+                </div>
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="feedbackCategory" required>
+                        <option value="">Select a category</option>
+                        <option value="food_quality">Food Quality</option>
+                        <option value="service">Service</option>
+                        <option value="app_experience">App Experience</option>
+                        <option value="pricing">Pricing</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Your Feedback</label>
+                    <textarea id="feedbackMessage" required style="min-height:110px;resize:vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- COMPLIANCE MODAL -->
+    <div class="modal" id="complianceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Compliance &amp; Privacy</h3>
+                <button class="close-modal" onclick="closeModal('complianceModal')">&times;</button>
+            </div>
+            <div class="compliance-content">
+                <h4>Terms of Service</h4>
+                <p>By using the Campus Canteen app, you agree to:</p>
+                <ul>
+                    <li>Provide accurate account information</li>
+                    <li>Use the service for legitimate food orders only</li>
+                    <li>Respect the canteen staff and fellow students</li>
+                    <li>Pay for all orders placed through your account</li>
+                    <li>Not share your account credentials with others</li>
+                </ul>
+                <h4>🔒 Privacy Policy</h4>
+                <p>We collect and use your information to:</p>
+                <ul>
+                    <li>Process your food orders and payments</li>
+                    <li>Communicate order status updates</li>
+                    <li>Improve our service based on feedback</li>
+                    <li>Maintain account security</li>
+                </ul>
+                <p>We do not sell your personal information to third parties. Payment processing is handled securely by
+                    Razorpay.</p>
+                <h4>💰 Refund Policy</h4>
+                <p>Refunds are provided in the following cases:</p>
+                <ul>
+                    <li>Order cancelled before preparation begins</li>
+                    <li>Food quality issues (case-by-case basis)</li>
+                    <li>System errors resulting in duplicate charges</li>
+                </ul>
+                <p>Refunds are processed within 5-7 business days to your original payment method.</p>
+                <h4>📞 Contact Information</h4>
+                <ul>
+                    <li>Email: support@campuscanteen.edu</li>
+                    <li>Phone: +91 1234567890</li>
+                    <li>Visit: Main Campus Canteen, Ground Floor</li>
+                </ul>
+                <p
+                    style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);color:var(--text-3);font-size:12px;">
+                    Last updated: February 2026 &nbsp;|&nbsp; Campus Canteen © 2026
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:3001/api';
+        const SOCKET_URL = 'http://localhost:3001';
+        const BASE_URL = 'http://localhost:3001';
+
+        function getFullImageUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('http') || url.startsWith('blob:')) return url;
+            return `${BASE_URL}${url}`;
+        }
+
+        // Global Variables
+        let currentUser = null;
+        let authToken = null;
+        let socket = null;
+        let cart = [];
+        let menuItems = [];
+        let activeOrders = [];
+        let completedOrders = [];
+        let currentCategory = 'all';
+
+        // ========== CUSTOM MODAL SYSTEM ==========
+        function showModal(title, message, options = {}) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2 style="color: ${options.type === 'error' ? 'var(--danger)' : options.type === 'success' ? 'var(--success)' : 'var(--warning)'}; margin-bottom: 20px; font-weight: 800;">${title}</h2>
+                    <p style="color: var(--text-2); font-size: 16px; margin-bottom: 30px; line-height: 1.5;">${message}</p>
+                    <button class="modal-btn modal-btn-primary" onclick="this.closest('.modal').remove()">
+                        Close
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showConfirm(title, message, options = {}) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <h2 style="color: var(--primary); margin-bottom: 20px; font-weight: 800;">${title}</h2>
+                        <p style="color: var(--text-2); font-size: 16px; margin-bottom: 30px; line-height: 1.5;">${message}</p>
+                        <div style="display: flex; gap: 15px;">
+                            <button class="modal-btn modal-btn-secondary" id="confirmCancelBtn" style="flex: 1;">${options.cancelText || 'Cancel'}</button>
+                            <button class="modal-btn modal-btn-primary" id="confirmOkBtn" style="flex: 1; margin-top: 0;">${options.confirmText || 'Confirm'}</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                document.getElementById('confirmCancelBtn').onclick = () => { modal.remove(); resolve(false); };
+                document.getElementById('confirmOkBtn').onclick = () => { modal.remove(); resolve(true); };
+            });
+        }
+
+
+        // ── ITEM 10: Meal-time availability helpers ──
+        // Returns true if the item can be ordered right now
+        function isItemAvailable(item) {
+            if (item.is_meal_locked) return false;
+            if (!item.meal_start_time || !item.meal_end_time) return true;
+            const now = new Date();
+            const [startH, startM] = item.meal_start_time.split(':').map(Number);
+            const [endH, endM] = item.meal_end_time.split(':').map(Number);
+            const start = startH * 60 + startM;
+            const end = endH * 60 + endM;
+            const cur = now.getHours() * 60 + now.getMinutes();
+            return cur >= start && cur <= end;
+        }
+
+        // Format 'HH:MM' to '12:00 PM' display style
+        function formatAvailTime(t) {
+            if (!t) return '';
+            const [h, m] = t.split(':').map(Number);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            return `${((h % 12) || 12).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+        }
+
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            setupEventListeners();
+        });
+
+        // Check Authentication
+        async function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('currentUser');
+
+            if (token && user) {
+                authToken = token;
+                currentUser = JSON.parse(user);
+
+                // Validate token against backend — auto-logout if expired/invalid
+                try {
+                    const res = await fetch(`${API_URL}/orders/my-orders`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    if (res.status === 401 || res.status === 403) {
+                        console.warn('⚠️ Stored token is invalid/expired — forcing re-login');
+                        authToken = null;
+                        currentUser = null;
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                        return; // stay on login screen
+                    }
+                } catch (e) {
+                    // Server unreachable — still show app with cached user data
+                    console.warn('⚠️ Could not validate token (server unreachable), continuing offline');
+                }
+
+                showApp();
+            }
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Login Form
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                await login(email, password);
+            });
+
+            // Signup Form
+            document.getElementById('signupForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('signupName').value;
+                const email = document.getElementById('signupEmail').value;
+                const phone = document.getElementById('signupPhone').value;
+                const password = document.getElementById('signupPassword').value;
+                await signup(name, email, phone, password);
+            });
+
+            // Toggle Form
+            document.getElementById('toggleBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAuthForm();
+            });
+
+            // Star Rating
+            document.querySelectorAll('.star').forEach(star => {
+                star.addEventListener('click', function () {
+                    const rating = this.getAttribute('data-rating');
+                    setRating(rating);
+                });
+            });
+
+            // OTP Verification Form
+            document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('verifyEmailDisplay').textContent;
+                const code = document.getElementById('verifyCode').value;
+                await verifyEmail(email, code);
+            });
+
+            // Resend OTP
+            document.getElementById('resendBtn').addEventListener('click', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('verifyEmailDisplay').textContent;
+                await resendOtp(email);
+            });
+
+            // Edit Profile Form
+            document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateProfile();
+            });
+
+            // Change Password Form
+            document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await changePassword();
+            });
+
+            // Feedback Form
+            document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await submitFeedback();
+            });
+
+            // Close modal on background click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+
+            // ── FORGOT PASSWORD form listeners ──
+            document.getElementById('forgotStep1Form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await sendForgotOtp();
+            });
+            document.getElementById('forgotStep2Form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await verifyResetOtp();
+            });
+            document.getElementById('forgotStep3Form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await resetPasswordFinal();
+            });
+
+            // ── Profile picture file picker listener ──
+            const profilePicFile = document.getElementById('profilePicFile');
+            if (profilePicFile) {
+                profilePicFile.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    // Show preview immediately (local)
+                    const preview = document.getElementById('profilePicPreview');
+                    if (preview) preview.src = URL.createObjectURL(file);
+                    // Upload and store URL
+                    const url = await uploadProfilePic(file);
+                    if (url) { pendingProfilePicUrl = url; }
+                });
+            }
+
+            // ── Drag-and-drop for upload zone ──
+            const dropZone = document.getElementById('uploadDropZone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drag-over');
+                });
+                dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+                dropZone.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drag-over');
+                    const file = e.dataTransfer.files[0];
+                    if (!file) return;
+                    const preview = document.getElementById('profilePicPreview');
+                    if (preview) preview.src = URL.createObjectURL(file);
+                    const url = await uploadProfilePic(file);
+                    if (url) { pendingProfilePicUrl = url; }
+                });
+            }
+        }
+
+        // Login Function
+        async function login(email, password) {
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 403 && data.requiresVerification) {
+                    showVerificationForm(data.email);
+                    return;
+                }
+
+                if (data.token && data.user) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    currentUser.balance = currentUser.balance ?? 0;
+                    currentUser.picture = currentUser.picture ?? null;
+
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                    showApp();
+                } else {
+                    showError('authError', data.error || 'Invalid login response');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('authError', 'Failed to connect to server');
+            }
+        }
+
+        // Signup Function
+        async function signup(name, email, phone, password) {
+            try {
+                const response = await fetch(`${API_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, phone, password })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 201 || response.status === 200) {
+                    showSuccess('authSuccess', 'OTP sent! Please verify your email.');
+                    setTimeout(() => {
+                        showVerificationForm(email);
+                    }, 1000);
+                } else {
+                    showError('authError', data.error || 'Signup failed');
+                }
+
+            } catch (error) {
+                console.error('Signup error:', error);
+                showError('authError', 'Failed to connect to server');
+            }
+        }
+
+        // Verify Email Function
+        async function verifyEmail(email, code) {
+            try {
+                const response = await fetch(`${API_URL}/auth/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code })
+                });
+                const data = await response.json();
+                if (data.token && data.user) {
+                    showSuccess('authSuccess', 'Email verified successfully! 🎉');
+                    setTimeout(() => {
+                        authToken = data.token;
+                        currentUser = data.user;
+                        localStorage.setItem('authToken', authToken);
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        showApp();
+                    }, 1000);
+                } else {
+                    showError('authError', data.error || 'Verification failed');
+                }
+            } catch (error) {
+                showError('authError', 'Server error during verification');
+            }
+        }
+
+        // Resend OTP Function
+        async function resendOtp(email) {
+            try {
+                const response = await fetch(`${API_URL}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                if (response.ok) {
+                    showSuccess('authSuccess', 'New code sent to your email!');
+                } else {
+                    showError('authError', 'Failed to resend code');
+                }
+            } catch (error) {
+                showError('authError', 'Server error');
+            }
+        }
+
+        // Display Verification Form
+        function showVerificationForm(email) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('verifyForm').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'Verify Email 📧';
+            document.querySelector('.login-tagline').textContent = 'Enter the code sent to your inbox';
+            document.getElementById('verifyEmailDisplay').textContent = email;
+            document.getElementById('toggleBtn').textContent = 'Back to Login';
+            document.getElementById('toggleText').textContent = "Didn't receive code? ";
+        }
+
+        // Toggle Login / Signup
+        function toggleAuthForm() {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const verifyForm = document.getElementById('verifyForm');
+            const title = document.getElementById('authTitle');
+            const toggleText = document.getElementById('toggleText');
+            const toggleBtn = document.getElementById('toggleBtn');
+
+            // Reset error/success
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authSuccess').style.display = 'none';
+
+            if (verifyForm.style.display === 'block') {
+                // Return to login from verification
+                verifyForm.style.display = 'none';
+                loginForm.style.display = 'block';
+                title.textContent = 'Welcome Back 👋';
+                document.querySelector('.login-tagline').textContent = 'Sign in to your student account';
+                toggleText.textContent = "Don't have an account? ";
+                toggleBtn.textContent = 'Sign Up';
+                return;
+            }
+
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                title.textContent = 'Welcome Back 👋';
+                document.querySelector('.login-tagline').textContent = 'Sign in to your student account';
+                toggleText.textContent = "Don't have an account? ";
+                toggleBtn.textContent = 'Sign Up';
+            } else {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+                title.textContent = 'Create Account ✨';
+                document.querySelector('.login-tagline').textContent = 'Fill in your details to get started';
+                toggleText.textContent = "Already have an account? ";
+                toggleBtn.textContent = 'Login';
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // FORGOT PASSWORD FLOW — 3-STEP (EMAIL → OTP → RESET)
+        // ══════════════════════════════════════════════
+
+        let fpEmail = '';      // stored email across steps
+        let fpResendTimer = null;
+
+        // Helper: hide all auth sub-forms, show loginForm as baseline
+        function _hideAllAuthForms() {
+            ['loginForm', 'signupForm', 'verifyForm',
+                'forgotStep1Form', 'forgotStep2Form', 'forgotStep3Form']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+        }
+
+        // Show login form explicitly (used by "Back" links in forgot flow)
+        function showLoginForm() {
+            _hideAllAuthForms();
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'Welcome Back 👋';
+            document.querySelector('.login-tagline').textContent = 'Sign in to your student account';
+            document.getElementById('toggleText').textContent = "Don't have an account? ";
+            document.getElementById('toggleBtn').textContent = 'Sign Up';
+        }
+
+        // Step 1: Show email entry screen
+        function showForgotPassword() {
+            _hideAllAuthForms();
+            document.getElementById('forgotStep1Form').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'Reset Password 🔑';
+            document.querySelector('.login-tagline').textContent = 'Enter your email to receive a reset code';
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authSuccess').style.display = 'none';
+        }
+
+        // Show step 2 (OTP entry)
+        function showForgotOtpForm() {
+            _hideAllAuthForms();
+            document.getElementById('forgotStep2Form').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'Verify OTP 📧';
+            document.querySelector('.login-tagline').textContent = 'Enter the 6-digit code from your email';
+            document.getElementById('fpEmailDisplay').textContent = fpEmail;
+        }
+
+        // STEP 1 submit: send OTP
+        async function sendForgotOtp() {
+            const email = document.getElementById('fpEmail').value.trim();
+            if (!email) { showError('authError', 'Please enter your email.'); return; }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                // Always show generic message for security (no email-reveal)
+                showSuccess('authSuccess', 'If an account exists, a reset code has been sent.');
+                fpEmail = email;
+                setTimeout(() => showForgotOtpForm(), 1200);
+                // Start resend cooldown
+                fpStartResendTimer();
+            } catch {
+                showError('authError', 'Server error. Please try again.');
+            }
+        }
+
+        // STEP 2 submit: verify OTP
+        async function verifyResetOtp() {
+            const code = document.getElementById('fpOtpCode').value.trim();
+            if (code.length !== 6) { showError('authError', 'Enter a valid 6-digit code.'); return; }
+
+            // We don't verify separately — just move to step 3 and let reset-password do all validation
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authSuccess').style.display = 'none';
+            _hideAllAuthForms();
+            document.getElementById('forgotStep3Form').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'New Password 🔒';
+            document.querySelector('.login-tagline').textContent = 'Choose a strong new password';
+        }
+
+        // STEP 3 submit: reset password
+        async function resetPasswordFinal() {
+            const code = document.getElementById('fpOtpCode').value.trim();
+            const newPassword = document.getElementById('fpNewPassword').value;
+            const confirmPassword = document.getElementById('fpConfirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showError('authError', 'Passwords do not match.');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showError('authError', 'Password must be at least 6 characters.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: fpEmail, code, newPassword })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showSuccess('authSuccess', '✅ Password reset! Please sign in with your new password.');
+                    setTimeout(() => showLoginForm(), 2000);
+                } else {
+                    showError('authError', data.error || 'Reset failed. Please try again.');
+                }
+            } catch {
+                showError('authError', 'Server error. Please try again.');
+            }
+        }
+
+        // Resend OTP from step 2
+        async function fpResendOtp() {
+            await sendForgotOtpSilent();
+            fpStartResendTimer();
+        }
+
+        async function sendForgotOtpSilent() {
+            try {
+                await fetch(`${API_URL}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: fpEmail })
+                });
+                showSuccess('authSuccess', 'New OTP sent to your email!');
+            } catch { /* silent */ }
+        }
+
+        // 60-second resend cooldown
+        function fpStartResendTimer() {
+            const btn = document.getElementById('fpResendBtn');
+            const timerEl = document.getElementById('fpResendTimer');
+            if (!btn || !timerEl) return;
+            let secs = 60;
+            btn.disabled = true;
+            timerEl.style.display = 'inline';
+            timerEl.textContent = ` (${secs}s)`;
+            if (fpResendTimer) clearInterval(fpResendTimer);
+            fpResendTimer = setInterval(() => {
+                secs--;
+                if (secs <= 0) {
+                    clearInterval(fpResendTimer);
+                    btn.disabled = false;
+                    timerEl.style.display = 'none';
+                } else {
+                    timerEl.textContent = ` (${secs}s)`;
+                }
+            }, 1000);
+        }
+
+
+
+        // Show App
+        function showApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+
+            document.getElementById('userName').textContent = currentUser.name;
+
+            const avatarContainer = document.getElementById('userAvatar');
+            if (currentUser.picture) {
+                avatarContainer.innerHTML = `<img src="${currentUser.picture}" alt="Profile">`;
+            } else {
+                const initials = currentUser.name
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase();
+                document.getElementById('userInitials').textContent = initials;
+            }
+
+            loadMenu();
+            connectSocket();
+            loadOrders();
+            // Feature 7+8: Check canteen open/close status
+            checkCanteenStatus();
+            setInterval(checkCanteenStatus, 60000); // re-check every minute
+        }
+
+        // ══════════════════════════════════════════════
+        // CANTEEN OPEN / CLOSE ENFORCEMENT (Features 7 & 8)
+        // ══════════════════════════════════════════════
+        let canteenIsOpen = true; // optimistic default
+
+        async function checkCanteenStatus() {
+            try {
+                const res = await fetch(`${API_URL}/canteen/status`);
+                if (!res.ok) return; // if endpoint fails, don't block students
+                const data = await res.json();
+
+                const oldStatus = canteenIsOpen;
+                canteenIsOpen = data.is_open;
+
+                // If status changed, refresh menu and cart display
+                if (oldStatus !== canteenIsOpen) {
+                    displayMenu(currentCategory);
+                    updateCart();
+                }
+
+                const fmt = t => {
+                    const [h, m] = t.split(':');
+                    const hour = parseInt(h);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    return `${hour % 12 || 12}:${m} ${ampm}`;
+                };
+
+                if (!canteenIsOpen) {
+                    // Show closed banner
+                    let banner = document.getElementById('canteenClosedBanner');
+                    if (!banner) {
+                        banner = document.createElement('div');
+                        banner.id = 'canteenClosedBanner';
+                        banner.style.cssText = `
+                            position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
+                            background: rgba(185, 28, 28, 0.95);
+                            backdrop-filter: blur(10px);
+                            -webkit-backdrop-filter: blur(10px);
+                            color: white; text-align: center; padding: 16px 24px;
+                            font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+                            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+                            display: flex; align-items: center; justify-content: center; gap: 12px;
+                            border-bottom: 1px solid rgba(255,255,255,0.1);
+                        `;
+                        document.body.prepend(banner);
+                    }
+                    banner.innerHTML = `
+                        <span style="font-size: 18px;"></span>
+                        <span>CANTEEN CLOSED &nbsp;|&nbsp; Operating Hours: <strong>${fmt(data.open_time)}</strong> to <strong>${fmt(data.close_time)}</strong></span>
+                    `;
+
+                    // Feature 8: (Keep Active Orders visible even if canteen is closed)
+                    // The tab hiding logic has been removed so students can track existing orders.
+
+                } else {
+                    // Remove closed banner if it exists
+                    const banner = document.getElementById('canteenClosedBanner');
+                    if (banner) banner.remove();
+
+                    // Show Active Orders tab (ensure it's always showable if we accidentally hid it before)
+                    const activeTabBtn = document.querySelector('.tab-btn[onclick*="active"]');
+                    if (activeTabBtn) activeTabBtn.style.display = '';
+                }
+            } catch (e) {
+                console.warn('Canteen status check failed (backend may be offline):', e.message);
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // REFUND POLICY — CANCELLATION MODAL (Feature 9)
+        // ══════════════════════════════════════════════
+        const RICE_NOODLE_CATEGORY = 'Rice & Noodles';
+
+        function showRefundPolicyModal(orderId, orderTotal, orderItems) {
+            // Determine if any item is Rice & Noodles
+            const hasRiceNoodle = (orderItems || []).some(item =>
+                (item.item_name || item.name || '').toLowerCase().includes('rice') ||
+                (item.item_name || item.name || '').toLowerCase().includes('noodle') ||
+                (item.selected_addon || item.addon) // default meals with addons = rice/noodles
+            );
+
+            let refundAmount, deductionAmount, policyText;
+
+            if (hasRiceNoodle) {
+                refundAmount = 0;
+                deductionAmount = orderTotal;
+                policyText = '<strong>Rice &amp; Noodles items are non-refundable</strong><br><small>100% cancellation charge applies (already in preparation)</small>';
+            } else {
+                deductionAmount = +(orderTotal * 0.30).toFixed(2);
+                refundAmount = +(orderTotal - deductionAmount).toFixed(2);
+                policyText = '<strong>30% cancellation fee applies</strong><br><small>70% of your payment will be refunded</small>';
+            }
+
+            // Build a modal-like overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'refundPolicyOverlay';
+            overlay.style.cssText = `
+                position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+                z-index: 9999; display: flex; align-items: center; justify-content: center;
+                backdrop-filter: blur(4px); animation: fadeIn 0.2s ease;
+            `;
+            overlay.innerHTML = `
+                <div style="background: var(--surface, #fff); border-radius: 20px; padding: 32px;
+                            max-width: 420px; width: 90%; box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+                            border: 2px solid var(--border, #eee); animation: slideUp 0.25s ease;">
+                    <div style="font-size:36px;text-align:center;margin-bottom:12px;"></div>
+                    <h3 style="text-align:center;font-size:18px;font-weight:800;color:var(--text,#111);margin-bottom:8px;">
+                        Cancel Order?
+                    </h3>
+                    <p style="text-align:center;font-size:13px;color:var(--text-2,#666);margin-bottom:20px;">
+                        ${policyText}
+                    </p>
+                    <div style="background:var(--bg,#f5f5f5);border-radius:14px;padding:16px;margin-bottom:20px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                            <span style="color:var(--text-2,#666);font-size:14px;">Order Total</span>
+                            <span style="font-weight:700;font-size:14px;color:var(--text,#111);">₹${orderTotal}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                            <span style="color:#dc2626;font-size:14px;">Deduction</span>
+                            <span style="font-weight:700;font-size:14px;color:#dc2626;">- ₹${deductionAmount}</span>
+                        </div>
+                        <div style="height:1px;background:var(--border,#eee);margin:8px 0;"></div>
+                        <div style="display:flex;justify-content:space-between;">
+                            <span style="color:#16a34a;font-weight:700;font-size:15px;">You Receive</span>
+                            <span style="font-weight:800;font-size:18px;color:#16a34a;">₹${refundAmount}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;">
+                        <button onclick="document.getElementById('refundPolicyOverlay').remove()"
+                            style="flex:1;padding:14px;border-radius:12px;border:2px solid var(--border,#eee);
+                                   background:transparent;font-weight:700;font-size:14px;cursor:pointer;color:var(--text,#111);">
+                            Keep Order
+                        </button>
+                        <button onclick="confirmCancelOrder('${orderId}'); document.getElementById('refundPolicyOverlay').remove();"
+                            style="flex:1;padding:14px;border-radius:12px;border:none;
+                                   background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;
+                                   font-weight:700;font-size:14px;cursor:pointer;
+                                   box-shadow:0 4px 16px rgba(220,38,38,0.3);">
+                            Cancel Order
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        // Called after user confirms cancellation from the refund policy modal
+        async function confirmCancelOrder(orderId) {
+            try {
+                const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (res.ok || data.success) {
+                    showToast('Order cancelled successfully.');
+                    loadOrders();
+                } else {
+                    showToast(data.error || 'Cancellation failed. Contact staff.');
+                }
+            } catch (e) {
+                showToast('Network error. Please try again.');
+            }
+        }
+
+
+
+        // Connect Socket
+        function connectSocket() {
+            socket = io(SOCKET_URL, {
+                auth: { token: authToken }
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+
+            socket.on('orderUpdate', (order) => {
+                updateOrderStatus(order);
+            });
+
+            socket.on('order-completed', (data) => {
+                console.log('Order completed:', data.orderId);
+
+                activeOrders = activeOrders.filter(o => o.order_id !== data.orderId);
+                loadOrders();
+
+                const qrOrderId = document.getElementById('qrOrderId').textContent.replace('Order #', '');
+                if (qrOrderId === data.orderId) {
+                    closeQRModal();
+                }
+
+                showToast('Order completed! ✅');
+            });
+
+            // Listen for stock updates
+            socket.on('stock-updated', () => {
+                console.log('Stock updated - reloading menu');
+                loadMenu();
+            });
+        }
+
+        // Load Menu
+        async function loadMenu() {
+            try {
+                // Get raw materials first
+                const rawResponse = await fetch(`${API_URL}/raw-materials`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const rawMaterials = await rawResponse.json();
+
+                // Calculate default meal availability
+                const vegRiceStock = Math.min(rawMaterials.rice || 0, rawMaterials.veg || 0);
+                const vegNoodlesStock = Math.min(rawMaterials.noodles || 0, rawMaterials.veg || 0);
+
+                // Create default meals array
+                const defaultMeals = [
+
+
+                ];
+
+                // Get regular menu items
+                const menuResponse = await fetch(`${API_URL}/menu`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const regularItems = await menuResponse.json();
+
+                // Combine default meals with regular items
+                menuItems = [...defaultMeals];
+
+                regularItems.forEach(item => {
+                    if (!item.is_default_meal) {
+                        const itemId = item.item_id || item.id || item._id;
+
+                        if (!itemId) {
+                            console.error('❌ Menu item missing ID:', item);
+                        }
+
+                        menuItems.push({
+                            item_id: itemId,
+                            id: itemId,
+                            name: item.name || item.item_name,
+                            description: item.description || '',
+                            price: Number(item.price),
+                            image_url: item.image_url || item.image || 'https://via.placeholder.com/300',
+                            stock: item.stock || 0,
+                            category: item.category || 'Uncategorized',
+                            isAvailable: item.isAvailable !== false && item.stock > 0,
+                            is_instant_meal: Boolean(item.is_instant_meal),
+                            is_meal_locked: Boolean(item.is_meal_locked),
+                            meal_start_time: item.meal_start_time || null,
+                            meal_end_time: item.meal_end_time || null,
+                        });
+                    }
+                });
+
+                console.log('✅ Menu loaded with', menuItems.length, 'items');
+                displayMenu();
+            } catch (error) {
+                console.error('❌ Failed to load menu:', error);
+                showModal('Menu Load Error', 'Failed to load menu. Please refresh the page.', { type: 'error' });
+            }
+        }
+        // ── Meal-time availability helpers ──
+        function isItemAvailable(item) {
+            if (!canteenIsOpen) return false;
+            if (!item.is_meal_locked) return true;
+            if (!item.meal_start_time || !item.meal_end_time) return true;
+            const now = new Date();
+            const nowMins = now.getHours() * 60 + now.getMinutes();
+            const [sh, sm] = item.meal_start_time.split(':').map(Number);
+            const [eh, em] = item.meal_end_time.split(':').map(Number);
+            const startMins = sh * 60 + sm;
+            const endMins = eh * 60 + em;
+
+            if (startMins < endMins) {
+                return nowMins >= startMins && nowMins < endMins;
+            } else {
+                // Over midnight
+                return nowMins >= startMins || nowMins < endMins;
+            }
+        }
+
+        function isItemUpcoming(item) {
+            if (!item.is_meal_locked || !item.meal_start_time) return false;
+            const now = new Date();
+            const [startH, startM] = item.meal_start_time.split(':').map(Number);
+            const cur = now.getHours() * 60 + now.getMinutes();
+            return cur < (startH * 60 + startM);
+        }
+
+        function formatAvailTime(t) {
+            if (!t) return '';
+            const [h, m] = t.split(':').map(Number);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            return `${((h % 12) || 12).toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`;
+        }
+
+        // ✅ FIXED: Display Menu with Radio Buttons for Addons
+        function displayMenu(category = 'all') {
+            const menuGrid = document.getElementById('menuGrid');
+            menuGrid.innerHTML = '';
+
+            let filteredItems = menuItems;
+            if (category !== 'all') {
+                filteredItems = menuItems.filter(item => item.category === category);
+            }
+
+            if (filteredItems.length === 0) {
+                menuGrid.innerHTML = '<p style="text-align: center; color: #999; padding: 50px; grid-column: 1/-1;">No items found in this category</p>';
+                return;
+            }
+
+            filteredItems.forEach((item, globalIndex) => {
+                const itemIndex = menuItems.findIndex(mi => mi.item_id === item.item_id);
+                const cartItem = cart.find(c => c.item_id === item.item_id);
+                const currentQty = cartItem ? cartItem.quantity : 0;
+                const selectedAddon = cartItem?.selectedAddon || 'none';
+
+                const itemCard = document.createElement('div');
+                itemCard.className = 'menu-item';
+                itemCard.setAttribute('data-category', item.category);
+                itemCard.setAttribute('data-name', item.name.toLowerCase());
+                itemCard.setAttribute('data-item-id', item.item_id);
+
+                // Stock status
+                let stockBadge = '';
+                let stockClass = '';
+                if (item.stock === 0) {
+                    stockBadge = '<span class="item-stock out">Out of Stock</span>';
+                    stockClass = 'disabled';
+                } else if (item.stock <= 5) {
+                    stockBadge = `<span class="item-stock low">Only ${item.stock} left</span>`;
+                } else {
+                    stockBadge = `<span class="item-stock">Stock: ${item.stock}</span>`;
+                }
+
+                // Instant meal badge
+                let instantMealBadge = '';
+                if (item.is_instant_meal) {
+                    instantMealBadge = '<span class="instant-meal-badge">🔥 Instant Meal</span>';
+                }
+
+                // ✅ FIXED: Build addon UI with RADIO buttons (mutually exclusive)
+                let addonHTML = '';
+                if (item.is_default_meal) {
+                    const radioName = `addon-${itemIndex}`;
+                    addonHTML = `
+                        <div class="addon-section">
+                            <div class="addon-title">🍳 Choose One Extra (Optional)</div>
+                            <div class="addon-options">
+                                <label class="addon-radio-label ${selectedAddon === 'none' ? 'checked' : ''}" id="addon-none-label-${itemIndex}">
+                                    <input type="radio" 
+                                           name="${radioName}" 
+                                           class="addon-radio" 
+                                           id="addon-none-${itemIndex}"
+                                           value="none"
+                                           ${selectedAddon === 'none' ? 'checked' : ''}
+                                           onchange="selectAddon(${itemIndex}, 'none')">
+                                    <span>❌ None</span>
+                                </label>
+                                <label class="addon-radio-label ${selectedAddon === 'egg' ? 'checked' : ''}" id="addon-egg-label-${itemIndex}">
+                                    <input type="radio" 
+                                           name="${radioName}" 
+                                           class="addon-radio" 
+                                           id="addon-egg-${itemIndex}"
+                                           value="egg"
+                                           ${selectedAddon === 'egg' ? 'checked' : ''}
+                                           onchange="selectAddon(${itemIndex}, 'egg')">
+                                    <span>🥚 Egg <span class="addon-price-tag">+₹15</span></span>
+                                </label>
+                                <label class="addon-radio-label ${selectedAddon === 'chicken' ? 'checked' : ''}" id="addon-chicken-label-${itemIndex}">
+                                    <input type="radio" 
+                                           name="${radioName}" 
+                                           class="addon-radio" 
+                                           id="addon-chicken-${itemIndex}"
+                                           value="chicken"
+                                           ${selectedAddon === 'chicken' ? 'checked' : ''}
+                                           onchange="selectAddon(${itemIndex}, 'chicken')">
+                                    <span>🍗 Chicken <span class="addon-price-tag">+₹30</span></span>
+                                </label>
+                            </div>
+                            <div class="base-included-note">✓ ${item.name === 'Veg Fried Rice' ? 'Rice' : 'Noodles'} & Veg included in base price</div>
+                        </div>
+                    `;
+                }
+
+                // In-cart badge shown when item already in cart
+                const inCartBadge = currentQty > 0 ? '<span class="in-cart-badge">✓ In Cart</span>' : '';
+
+                // ── Meal-time availability check ──
+                const avail = isItemAvailable(item);
+                const upcoming = !avail && isItemUpcoming(item);
+
+                let actionArea;
+                if (!avail) {
+                    // Outside service window — show locked state
+                    const openAt = item.meal_start_time ? formatAvailTime(item.meal_start_time) : null;
+                    const closeAt = item.meal_end_time ? formatAvailTime(item.meal_end_time) : null;
+                    let label, btnClass = '';
+                    if (upcoming) {
+                        // Before opening time — amber Upcoming badge
+                        label = openAt ? `Opens at ${openAt}` : 'Not yet available';
+                        btnClass = 'upcoming';
+                    } else {
+                        // After closing time (or no window) — grey Closed badge
+                        label = (openAt && closeAt) ? `🔒 Available ${openAt} – ${closeAt}` :
+                            openAt ? `🔒 Available from ${openAt}` :
+                                '🔒 Not available now';
+                    }
+                    itemCard.classList.add('meal-unavailable');
+                    actionArea = `<div class="meal-unavail-btn ${btnClass}">${label}</div>`;
+                } else if (currentQty > 0) {
+                    // In cart — show inline stepper
+                    actionArea = `
+                        <div class="card-stepper" id="card-stepper-${itemIndex}">
+                            <button type="button" class="card-stepper-btn" onclick="changeQuantity(${itemIndex}, -1)" aria-label="Decrease">−</button>
+                            <span class="card-stepper-qty" id="card-qty-${itemIndex}">${currentQty}</span>
+                            <button type="button" class="card-stepper-btn" onclick="changeQuantity(${itemIndex}, 1)" aria-label="Increase">+</button>
+                        </div>
+                    `;
+                } else {
+                    // Normal add-to-cart button
+                    const btnLabel = !canteenIsOpen ? 'Unavailable' : (item.stock === 0 ? 'Out of Stock' : '+ Add to Cart');
+                    const btnClass = (!canteenIsOpen || item.stock === 0) ? 'btn-disabled' : '';
+                    const btnTitle = !canteenIsOpen ? 'title="Canteen is closed"' : '';
+
+                    actionArea = `
+                        <button type="button" class="add-to-cart-btn ${btnClass}"
+                                onclick="addToCart(${itemIndex})"
+                                ${(!canteenIsOpen || item.stock === 0) ? 'disabled' : ''}
+                                id="add-btn-${itemIndex}" ${btnTitle}>
+                            ${btnLabel}
+                        </button>
+                    `;
+                }
+
+                if (currentQty > 0) itemCard.classList.add('in-cart-state');
+
+                itemCard.innerHTML = `
+                    <img src="${getFullImageUrl(item.image_url)}" alt="${item.name}" class="item-image">
+                    <div class="item-details">
+                        <div class="item-category">${item.category}${stockBadge}${instantMealBadge}</div>
+                        ${inCartBadge}
+                        <div class="item-name">${item.name}</div>
+                        <div style="color:#666;font-size:14px;margin-top:3px">${item.description}</div>
+                        <div class="item-price">₹${item.price}${item.is_default_meal ? ' <span style="font-size:12px;color:#999;">(base)</span>' : ''}</div>
+                        ${addonHTML}
+                        <div class="item-actions">${actionArea}</div>
+                    </div>
+                `;
+                menuGrid.appendChild(itemCard);
+            });
+        }
+
+        // ✅ NEW: Select Addon (handles radio button logic)
+        function selectAddon(itemIndex, addonType) {
+            const item = menuItems[itemIndex];
+            if (!item || !item.is_default_meal) return;
+
+            // Update visual state of labels
+            ['none', 'egg', 'chicken'].forEach(type => {
+                const label = document.getElementById(`addon-${type}-label-${itemIndex}`);
+                if (label) {
+                    label.classList.toggle('checked', type === addonType);
+                }
+            });
+
+            // Update cart item if already in cart
+            const cartItem = cart.find(c => c.item_id === item.item_id);
+            if (cartItem) {
+                cartItem.selectedAddon = addonType;
+                updateCart();
+            }
+        }
+
+        // Filter by Category
+        function filterByCategory(category) {
+            currentCategory = category;
+
+            // Update active button
+            document.querySelectorAll('.category-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-category') === category) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Filter menu
+            displayMenu(category);
+        }
+
+        // Wire category filter button clicks via JS (avoids HTML &amp; encoding issues)
+        document.querySelectorAll('.category-filter-btn[data-category]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                filterByCategory(this.getAttribute('data-category'));
+            });
+        });
+
+        // Search Menu
+        function searchMenu(query) {
+            query = query.toLowerCase().trim();
+            const menuCards = document.querySelectorAll('.menu-item');
+
+            menuCards.forEach(card => {
+                const itemName = card.getAttribute('data-name');
+                const category = card.getAttribute('data-category').toLowerCase();
+
+                if (itemName.includes(query) || category.includes(query)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // ✅ ENHANCED: Change Quantity — surgical DOM update, no full re-render
+        function changeQuantity(index, delta) {
+            const item = menuItems[index];
+            if (!item) { console.error('❌ Item not found at index:', index); return; }
+
+            const cartItem = cart.find(c => c.item_id === item.item_id);
+            if (!cartItem) return;
+
+            const newQty = cartItem.quantity + delta;
+
+            if (newQty <= 0) {
+                // Remove from cart — swap stepper back to Add button
+                cart = cart.filter(c => c.item_id !== item.item_id);
+                updateCart();
+                // Surgical card update
+                const card = document.querySelector(`.menu-item[data-item-id="${item.item_id}"]`);
+                if (card) {
+                    card.classList.remove('in-cart-state');
+                    const actions = card.querySelector('.item-actions');
+                    const btnLabel = !canteenIsOpen ? 'Unavailable' : '+ Add to Cart';
+                    const btnClass = !canteenIsOpen ? 'btn-disabled' : '';
+                    const btnTitle = !canteenIsOpen ? 'title="Canteen is closed"' : '';
+                    if (actions) actions.innerHTML = `
+                        <button type="button" class="add-to-cart-btn ${btnClass}"
+                                onclick="addToCart(${index})"
+                                ${!canteenIsOpen ? 'disabled' : ''}
+                                id="add-btn-${index}" ${btnTitle}>${btnLabel}</button>`;
+                    // Remove in-cart badge
+                    const badge = card.querySelector('.in-cart-badge');
+                    if (badge) badge.remove();
+                }
+            } else if (newQty <= item.stock) {
+                cartItem.quantity = newQty;
+                updateCart();
+                // Surgical qty number update
+                const qtyEl = document.getElementById(`card-qty-${index}`);
+                if (qtyEl) {
+                    qtyEl.textContent = newQty;
+                    qtyEl.style.color = 'var(--primary)';
+                }
+                // Also update cart tab stepper if visible
+                const cartQtyEl = document.getElementById(`cqty-${item.item_id}`);
+                if (cartQtyEl) cartQtyEl.textContent = newQty;
+            } else {
+                showToast(`Only ${item.stock} items available in stock`);
+            }
+        }
+
+        // ✅ ENHANCED: Add to Cart — surgical DOM update, no full grid re-render
+        function addToCart(index) {
+            const item = menuItems[index];
+            if (!item) { console.error('❌ Item not found at index:', index); return; }
+            if (!isItemAvailable(item)) { showToast('⏰ This item is not available at this time'); return; }
+            if (item.stock === 0) { showToast('Item is out of stock'); return; }
+
+            const itemId = item.item_id || item.id;
+            if (!itemId) { showModal('Item Error', `Cannot add ${item.name} to cart - item ID is missing.`, { type: 'error' }); return; }
+
+            // Get selected addon for default meals
+            let selectedAddon = 'none';
+            if (item.is_default_meal) {
+                const eggRadio = document.getElementById(`addon-egg-${index}`);
+                const chickenRadio = document.getElementById(`addon-chicken-${index}`);
+                if (eggRadio?.checked) selectedAddon = 'egg';
+                else if (chickenRadio?.checked) selectedAddon = 'chicken';
+            }
+
+            const existingItem = cart.find(i => i.item_id === itemId);
+            if (existingItem) {
+                if (existingItem.quantity < item.stock) {
+                    existingItem.quantity += 1;
+                    if (item.is_default_meal) existingItem.selectedAddon = selectedAddon;
+                } else { showToast(`Only ${item.stock} items available in stock`); return; }
+            } else {
+                cart.push({
+                    item_id: itemId, id: itemId, name: item.name,
+                    price: item.price, base_price: item.price,
+                    image_url: item.image_url, quantity: 1,
+                    cartIndex: index,
+                    is_default_meal: item.is_default_meal || false,
+                    base_ingredients: item.base_ingredients || null,
+                    selectedAddon: item.is_default_meal ? selectedAddon : null
+                });
+            }
+
+            updateCart();
+
+            // ── Surgical card update: swap Add button → stepper without grid re-render ──
+            const card = document.querySelector(`.menu-item[data-item-id="${itemId}"]`);
+            if (card) {
+                card.classList.add('in-cart-state');
+                // Add in-cart badge (before item-name)
+                if (!card.querySelector('.in-cart-badge')) {
+                    const nameEl = card.querySelector('.item-name');
+                    if (nameEl) {
+                        const badge = document.createElement('span');
+                        badge.className = 'in-cart-badge';
+                        badge.textContent = '✓ In Cart';
+                        nameEl.parentNode.insertBefore(badge, nameEl);
+                    }
+                }
+                const actions = card.querySelector('.item-actions');
+                const cartEntry = cart.find(c => c.item_id === itemId);
+                const qty = cartEntry ? cartEntry.quantity : 1;
+                if (actions) {
+                    actions.innerHTML = `
+                        <div class="card-stepper" id="card-stepper-${index}">
+                            <button type="button" class="card-stepper-btn" onclick="changeQuantity(${index}, -1)" aria-label="Decrease">−</button>
+                            <span class="card-stepper-qty" id="card-qty-${index}">${qty}</span>
+                            <button type="button" class="card-stepper-btn" onclick="changeQuantity(${index}, 1)" aria-label="Increase">+</button>
+                        </div>`;
+                    // Pulse the stepper
+                    const stepper = actions.querySelector('.card-stepper');
+                    if (stepper) {
+                        stepper.style.transition = 'box-shadow 0.4s';
+                        stepper.style.boxShadow = '0 0 0 4px rgba(232,82,26,0.2)';
+                        setTimeout(() => { stepper.style.boxShadow = ''; }, 500);
+                    }
+                }
+            }
+
+            showToast(`${item.name} added to cart`);
+        }
+
+        // ✅ ENHANCED: Update Cart — polished rows with new stepper and remove button
+        function updateCart() {
+            const cartItemsEl = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            const cartCount = document.getElementById('cartCount');
+            const cartItemCount = document.getElementById('cartItemCount');
+
+            const totalQty = cart.reduce((sum, i) => sum + i.quantity, 0);
+            if (cartCount) cartCount.textContent = totalQty;
+            if (cartItemCount) cartItemCount.textContent = totalQty;
+
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = '<p style="text-align:center;color:#999;padding:50px;">Your cart is empty</p>';
+                cartTotal.style.display = 'none';
+                return;
+            }
+
+            let subtotal = 0;
+            cartItemsEl.innerHTML = '';
+
+            cart.forEach(item => {
+                let displayPrice = item.base_price || item.price;
+                let addonLabel = '';
+                if (item.is_default_meal && item.selectedAddon && item.selectedAddon !== 'none') {
+                    if (item.selectedAddon === 'egg') { displayPrice += 15; addonLabel = '+ Egg (+₹15)'; }
+                    if (item.selectedAddon === 'chicken') { displayPrice += 30; addonLabel = '+ Chicken (+₹30)'; }
+                }
+                const itemTotal = displayPrice * item.quantity;
+                subtotal += itemTotal;
+
+                const row = document.createElement('div');
+                row.className = 'cart-item';
+                row.innerHTML = `
+                    <div class="cart-item-left">
+                        <div class="cart-item-name">${item.name}</div>
+                        ${addonLabel ? `<div class="cart-item-addon">${addonLabel}</div>` : ''}
+                        <div class="cart-item-unit" id="cunit-${item.item_id}">₹${displayPrice} × ${item.quantity} = ₹${itemTotal}</div>
+                    </div>
+                    <div class="cart-item-right">
+                        <div class="cart-stepper">
+                            <button type="button" class="cart-stepper-btn" onclick="updateCartItemQuantity('${item.item_id}', -1)" aria-label="Decrease">−</button>
+                            <span class="cart-stepper-qty" id="cqty-${item.item_id}">${item.quantity}</span>
+                            <button type="button" class="cart-stepper-btn" onclick="updateCartItemQuantity('${item.item_id}', 1)" aria-label="Increase">+</button>
+                        </div>
+                        <button type="button" class="remove-cart-btn" onclick="removeFromCart('${item.item_id}')" aria-label="Remove">✕</button>
+                    </div>
+                `;
+                cartItemsEl.appendChild(row);
+            });
+
+            document.getElementById('subtotal').textContent = subtotal;
+            document.getElementById('total').textContent = subtotal;
+            cartTotal.style.display = 'block';
+
+            // Disable checkout button UI if canteen is closed
+            const checkoutBtn = cartTotal.querySelector('.checkout-btn');
+            if (checkoutBtn) {
+                if (!canteenIsOpen) {
+                    checkoutBtn.classList.add('btn-disabled');
+                    checkoutBtn.disabled = true;
+                    checkoutBtn.title = 'Canteen is closed';
+                } else {
+                    checkoutBtn.classList.remove('btn-disabled');
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.title = '';
+                }
+            }
+        }
+
+        // ✅ ENHANCED: Update cart item quantity — surgical, no full re-render
+        function updateCartItemQuantity(itemId, delta) {
+            const item = cart.find(i => i.item_id === itemId);
+            if (!item) return;
+            const menuItem = menuItems.find(m => m.item_id === itemId);
+            const newQty = item.quantity + delta;
+
+            if (newQty <= 0) {
+                removeFromCart(itemId);
+            } else if (menuItem && newQty <= menuItem.stock) {
+                item.quantity = newQty;
+                updateCart();
+                // Surgical cart qty number update
+                const el = document.getElementById(`cqty-${itemId}`);
+                if (el) {
+                    el.textContent = newQty;
+                    el.style.animation = 'none';
+                    void el.offsetWidth;
+                    el.style.animation = 'cartPulse 0.3s ease-out';
+                }
+                // Also sync the menu card stepper if visible
+                const cartEntry = cart.find(c => c.item_id === itemId);
+                if (cartEntry) {
+                    const menuIdx = menuItems.findIndex(m => m.item_id === itemId);
+                    if (menuIdx !== -1) {
+                        const cardQtyEl = document.getElementById(`card-qty-${menuIdx}`);
+                        if (cardQtyEl) cardQtyEl.textContent = newQty;
+                    }
+                }
+                // Update subtotal line surgically
+                const unitEl = document.getElementById(`cunit-${itemId}`);
+                if (unitEl) {
+                    const price = (item.base_price || item.price) + (item.selectedAddon === 'egg' ? 15 : item.selectedAddon === 'chicken' ? 30 : 0);
+                    unitEl.textContent = `₹${price} × ${newQty} = ₹${price * newQty}`;
+                }
+                recalcCartTotals();
+            } else {
+                showToast(`Only ${menuItem ? menuItem.stock : '?'} items available in stock`);
+            }
+        }
+
+        // ✅ ENHANCED: Remove from Cart — surgical, no re-render
+        function removeFromCart(itemId) {
+            cart = cart.filter(item => item.item_id !== itemId);
+            updateCart();
+            // Restore menu card to Add button state
+            const menuIdx = menuItems.findIndex(m => m.item_id === itemId);
+            if (menuIdx !== -1) {
+                const card = document.querySelector(`.menu-item[data-item-id="${itemId}"]`);
+                if (card) {
+                    card.classList.remove('in-cart-state');
+                    const badge = card.querySelector('.in-cart-badge');
+                    if (badge) badge.remove();
+                    const actions = card.querySelector('.item-actions');
+                    const btnLabel = !canteenIsOpen ? 'Unavailable' : '+ Add to Cart';
+                    const btnClass = !canteenIsOpen ? 'btn-disabled' : '';
+                    const btnTitle = !canteenIsOpen ? 'title="Canteen is closed"' : '';
+                    if (actions) actions.innerHTML = `
+                        <button type="button" class="add-to-cart-btn ${btnClass}"
+                                onclick="addToCart(${menuIdx})"
+                                ${!canteenIsOpen ? 'disabled' : ''}
+                                id="add-btn-${menuIdx}" ${btnTitle}>${btnLabel}</button>`;
+                }
+            }
+            showToast('Item removed from cart');
+        }
+
+        // Recalculate totals only (no full re-render)
+        function recalcCartTotals() {
+            let subtotal = 0;
+            cart.forEach(item => {
+                let p = item.base_price || item.price;
+                if (item.is_default_meal && item.selectedAddon) {
+                    if (item.selectedAddon === 'egg') p += 15;
+                    else if (item.selectedAddon === 'chicken') p += 30;
+                }
+                subtotal += p * item.quantity;
+            });
+            const s = document.getElementById('subtotal');
+            const t = document.getElementById('total');
+            const cc = document.getElementById('cartCount');
+            if (s) s.textContent = subtotal;
+            if (t) t.textContent = subtotal;
+            if (cc) cc.textContent = cart.reduce((sum, i) => sum + i.quantity, 0);
+        }
+
+        // ✅ FIXED: Checkout with Addon Data
+        async function checkout() {
+            if (!canteenIsOpen) {
+                showModal('Canteen Closed', 'Sorry, the canteen is currently closed. You cannot place orders at this time.', { type: 'error' });
+                return;
+            }
+
+            if (cart.length === 0) {
+                showModal('Cart Empty', 'Your cart is empty. Please add some delicious items first!', { type: 'warning' });
+                return;
+            }
+
+            // ── Cart safety: block checkout if any item is now outside its service window ──
+            const unavailableItems = cart.filter(ci => {
+                const mi = menuItems.find(m => m.item_id === ci.item_id);
+                return mi && !isItemAvailable(mi);
+            });
+            if (unavailableItems.length > 0) {
+                const names = unavailableItems.map(i => i.name).join(', ');
+                showToast(`⏰ ${names} ${unavailableItems.length > 1 ? 'are' : 'is'} no longer available. Please remove from cart to continue.`);
+                return;
+            }
+
+            console.log('=== Starting Checkout ===');
+            console.log('Cart contents:', cart);
+
+            const invalidItems = cart.filter(item => !item.item_id && !item.id);
+
+            if (invalidItems.length > 0) {
+                console.error('❌ Invalid items in cart:', invalidItems);
+                showModal('Cart Error', 'Some items in your cart are invalid. Please refresh the page.', { type: 'error' });
+                return;
+            }
+
+            const totalAmount = cart.reduce((sum, item) => {
+                let price = item.base_price || item.price;
+
+                if (item.is_default_meal && item.selectedAddon && item.selectedAddon !== 'none') {
+                    if (item.selectedAddon === 'egg') price += 15;
+                    else if (item.selectedAddon === 'chicken') price += 30;
+                }
+
+                return sum + (price * item.quantity);
+            }, 0);
+
+            console.log('Total amount:', totalAmount);
+
+            const orderItems = cart.map(item => {
+                const itemId = item.item_id || item.id;
+
+                // Calculate final price with addon
+                let finalPrice = item.base_price || item.price;
+                if (item.is_default_meal && item.selectedAddon && item.selectedAddon !== 'none') {
+                    if (item.selectedAddon === 'egg') finalPrice += 15;
+                    else if (item.selectedAddon === 'chicken') finalPrice += 30;
+                }
+
+                return {
+                    item_id: itemId,
+                    id: itemId,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: finalPrice,
+                    image_url: item.image_url,
+                    is_default_meal: item.is_default_meal || false,
+                    base_ingredients: item.base_ingredients || null,
+                    selectedAddon: item.selectedAddon || null
+                };
+            });
+
+            console.log('Order items being sent:', orderItems);
+
+            try {
+                const response = await fetch(`${API_URL}/orders/create-payment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        items: orderItems,
+                        totalAmount: totalAmount
+                    })
+                });
+
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Payment creation failed:', errorText);
+                    showModal('Payment Error', 'Payment creation failed: ' + errorText, { type: 'error' });
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('✅ Payment order created:', data);
+
+                const options = {
+                    key: data.key,
+                    amount: data.amount,
+                    currency: 'INR',
+                    name: 'Campus Canteen',
+                    description: 'Food Order',
+                    order_id: data.razorpayOrderId,
+                    handler: function (payment) {
+                        console.log('✅ Payment successful:', payment);
+                        verifyPayment(data.orderId, payment, orderItems, totalAmount);
+                    },
+                    prefill: {
+                        name: currentUser.name,
+                        email: currentUser.email,
+                        contact: currentUser.phone || ''
+                    },
+                    theme: { color: '#ff6b35' },
+                    modal: {
+                        ondismiss: function () {
+                            console.log('⚠️ Payment cancelled by user');
+                        }
+                    }
+                };
+
+                const razorpay = new Razorpay(options);
+                razorpay.open();
+
+            } catch (err) {
+                console.error('❌ Checkout error:', err);
+                showModal('Checkout Failed', 'Checkout failed: ' + err.message, { type: 'error' });
+            }
+        }
+
+        // Verify Payment
+        async function verifyPayment(orderId, payment, items, totalAmount) {
+            console.log('=== Verifying Payment ===');
+
+            try {
+                const response = await fetch(`${API_URL}/orders/verify-payment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        orderId,
+                        razorpayOrderId: payment.razorpay_order_id,
+                        razorpayPaymentId: payment.razorpay_payment_id,
+                        razorpaySignature: payment.razorpay_signature,
+                        items: items,
+                        totalAmount: totalAmount
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('✅ Order placed successfully');
+
+                    const newOrder = {
+                        order_id: data.orderId || orderId,
+                        status: 'active',
+                        total_amount: totalAmount,
+                        created_at: new Date().toISOString(),
+                        items_summary: items.map(i => `${i.name} x${i.quantity}`).join(', '),
+                        qrData: data.qrData || data.qr_data
+                    };
+
+                    activeOrders.unshift(newOrder);
+
+                    cart = [];
+                    updateCart();
+
+                    showQRModal(newOrder.order_id, newOrder.qrData);
+                    showToast('Payment successful!');
+
+                    setTimeout(() => {
+                        loadOrders();
+                        loadMenu();
+                    }, 1000);
+                } else {
+                    console.error('❌ Payment verification failed:', data);
+                    showModal('Verification Failed', data.error || 'Payment verification failed', { type: 'error' });
+                }
+
+            } catch (err) {
+                console.error('❌ Payment verification error:', err);
+                showModal('System Error', 'Payment verification error: ' + err.message, { type: 'error' });
+            }
+        }
+
+        // Load Orders
+        // Load Orders
+        async function loadOrders() {
+            try {
+                const res = await fetch(`${API_URL}/orders/my-orders`, {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`
+                    }
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                const orders = await res.json();
+                console.log('📋 === ORDERS API RESPONSE ===');
+
+                // Ensure we have an array (guard against error objects)
+                if (!Array.isArray(orders)) {
+                    console.warn('⚠️ Orders response is not an array:', orders);
+                    activeOrders = [];
+                    completedOrders = [];
+                    displayOrders();
+                    return;
+                }
+
+                console.log('Total orders received:', orders.length);
+
+                activeOrders = orders.filter(o => o.status === 'active');
+                completedOrders = orders.filter(o => o.status === 'completed');
+
+                console.log('✅ Active orders:', activeOrders.length);
+                console.log('✅ Completed orders:', completedOrders.length);
+
+                displayOrders();
+            } catch (err) {
+                console.error('❌ Failed to load orders:', err);
+            }
+        }
+
+        // ✅ ENHANCED: Display Orders with Addon Details
+        function displayOrders() {
+            const activeContainer = document.getElementById('activeOrders');
+            const completedContainer = document.getElementById('completedOrders');
+
+            if (activeOrders.length === 0) {
+                activeContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 50px;">No active orders</p>';
+            } else {
+                activeContainer.innerHTML = '';
+                activeOrders.forEach(order => {
+                    const orderCard = createOrderCard(order);
+                    activeContainer.appendChild(orderCard);
+                });
+            }
+
+            if (completedOrders.length === 0) {
+                completedContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 50px;">No completed orders</p>';
+            } else {
+                completedContainer.innerHTML = '';
+                completedOrders.forEach(order => {
+                    const orderCard = createOrderCard(order);
+                    completedContainer.appendChild(orderCard);
+                });
+            }
+        }
+
+        // ✅ FIXED: Create Order Card with Complete Addon Information Display
+        // ✅ FIXED: Create Order Card with Complete Addon Information Display
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'order-card';
+
+            const statusClass = `status-${order.status}`;
+            const statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
+
+            // ✅ Build items display with full addon details
+            let itemsHTML = '';
+
+            console.log('📦 Creating order card for:', order.order_id);
+            console.log('Order has items array?', Array.isArray(order.items));
+            console.log('Items:', order.items);
+
+            // Try to use the items array first (most detailed)
+            if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+                console.log('✅ Using items array');
+
+                itemsHTML = order.items.map(item => {
+                    // Get the item name - handle different property names
+                    const itemName = item.item_name || item.name || 'Unknown Item';
+                    const itemQty = item.quantity || 1;
+                    const itemPrice = item.price || 0;
+
+                    let displayText = `${itemName} x${itemQty}`;
+                    let addonBadge = '';
+
+                    // Check for addon information in multiple possible formats
+                    const addon = item.selectedAddon || item.addon || item.selected_addon;
+
+                    console.log(`Item: ${itemName}, Addon:`, addon);
+
+                    if (addon && addon !== 'none') {
+                        const addonName = addon.charAt(0).toUpperCase() + addon.slice(1);
+                        const addonPrice = addon === 'egg' ? 15 : 30;
+                        addonBadge = ` <span style="background:#fff3e6;color:#ff6b35;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;margin-left:8px;">+ ${addonName} (₹${addonPrice})</span>`;
+                    }
+
+                    // Calculate item total
+                    const itemTotal = itemPrice * itemQty;
+
+                    return `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                    <span style="flex:1;display:flex;align-items:center;">
+                        ${displayText}${addonBadge}
+                    </span>
+                    <span style="font-weight:600;color:#333;margin-left:15px;">₹${itemTotal}</span>
+                </div>
+            `;
+                }).join('');
+            }
+            // Fallback to items_summary if items array not available
+            else if (order.items_summary) {
+                console.log('⚠️ Falling back to items_summary:', order.items_summary);
+
+                itemsHTML = order.items_summary.split(',').map(text => {
+                    const trimmedText = text.trim();
+
+                    return `
+                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                    <span>${trimmedText}</span>
+                </div>
+            `;
+                }).join('');
+            }
+            // Last resort - no items info
+            else {
+                console.warn('❌ No items data found in order:', order.order_id);
+                itemsHTML = '<p style="color:#999;text-align:center;padding:20px;">No item details available</p>';
+            }
+
+            card.innerHTML = `
+        <div class="order-header">
+            <div>
+                <div style="font-weight: bold; font-size: 18px;">Order #${order.order_id}</div>
+                <div style="color: #666; font-size: 14px;">${new Date(order.created_at || order.createdAt || Date.now()).toLocaleString()}</div>
+            </div>
+            <span class="order-status ${statusClass}">${statusText}</span>
+        </div>
+        
+        <div style="margin:15px 0;">
+            ${itemsHTML}
+        </div>
+        
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #f0f0f0;">
+            <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+                <span>Total:</span>
+                <span style="color:#ff6b35;">₹${order.total_amount}</span>
+            </div>
+        </div>
+        
+        ${order.status === 'active' && order.qr_data ? `
+            <button class="show-qr-btn" onclick="showQRModal('${order.order_id}', '${order.qr_data}')">
+                📱 Show QR Code
+            </button>
+        ` : ''}
+        ${order.status === 'active' ? `
+            <button onclick="showRefundPolicyModal('${order.order_id}', ${order.total_amount}, ${JSON.stringify(order.items || []).replace(/"/g, '&quot;')})"
+                style="width:100%;margin-top:10px;padding:12px 16px;border-radius:12px;border:1.5px solid #dc2626;
+                       background:transparent;color:#dc2626;font-weight:700;font-size:14px;cursor:pointer;
+                       transition:background 0.2s, color 0.2s;">
+                Cancel Order
+            </button>
+        ` : ''}
+    `;
+
+            return card;
+        }
+
+        // Show QR Modal
+        function showQRModal(orderId, qrData) {
+            const modal = document.getElementById('qrModalOverlay');
+            const qrImage = document.getElementById('qrCodeImage');
+            const qrOrderIdEl = document.getElementById('qrOrderId');
+
+            qrImage.src = qrData;
+            qrOrderIdEl.textContent = `Order #${orderId}`;
+
+            modal.classList.add('active');
+        }
+
+        // Close QR Modal
+        function closeQRModal(event) {
+            if (!event || event.target.id === 'qrModalOverlay' || event.target.classList.contains('qr-close-btn')) {
+                document.getElementById('qrModalOverlay').classList.remove('active');
+            }
+        }
+
+        // Update Order Status
+        function updateOrderStatus(order) {
+            const index = activeOrders.findIndex(o => o.order_id === order.order_id);
+            if (index !== -1) {
+                activeOrders[index] = order;
+                if (order.status === 'completed') {
+                    activeOrders.splice(index, 1);
+                    completedOrders.unshift(order);
+                }
+                displayOrders();
+
+                if (order.status === 'ready') {
+                    showToast(`Order #${order.order_id} is ready for pickup! 🎉`);
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('Order Ready!', {
+                            body: `Your order #${order.order_id} is ready for pickup!`,
+                            icon: '🍽️'
+                        });
+                    }
+                }
+            }
+        }
+
+        // Switch Tab (first definition — kept minimal; overridden by ENHANCED version below)
+        function switchTab(event, tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // Handle event from both nav buttons and from other code (null-safe)
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Activate the matching tab button if possible
+                const btn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
+                if (btn) btn.classList.add('active');
+            }
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const tabEl = document.getElementById(`${tab}Tab`);
+            if (tabEl) tabEl.classList.add('active');
+        }
+
+        // User Dropdown
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('userDropdown');
+            const avatar = document.getElementById('userAvatar');
+            if (dropdown && !dropdown.contains(e.target) && !avatar.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // Show Edit Profile Modal
+        function showEditProfile() {
+            document.getElementById('userDropdown').classList.remove('active');
+            document.getElementById('editName').value = currentUser.name;
+            // Clear previous error/success state so stale messages don't show
+            const errEl = document.getElementById('editProfileError');
+            const okEl = document.getElementById('editProfileSuccess');
+            if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+            if (okEl) { okEl.style.display = 'none'; okEl.textContent = ''; }
+            // Reset upload progress bar
+            const pw = document.getElementById('uploadProgressWrap');
+            if (pw) pw.style.display = 'none';
+            pendingProfilePicUrl = null;
+            // Populate avatar preview
+            const preview = document.getElementById('profilePicPreview');
+            if (preview) {
+                const picUrl = getFullImageUrl(currentUser.picture);
+                preview.src = picUrl ||
+                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(currentUser.email || 'default')}`;
+                preview.onerror = () => { preview.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(currentUser.email || 'default')}`; };
+            }
+            document.getElementById('editProfileModal').classList.add('active');
+        }
+
+        // Pending uploaded Cloudinary URL (set by upload handler before form submit)
+        let pendingProfilePicUrl = null;
+
+        // Upload profile image to Cloudinary unsigned (using upload preset)
+        async function uploadProfilePic(file) {
+            if (!file) return null;
+
+            // Validation
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+                showError('editProfileError', 'Only JPG, PNG, or WEBP images are allowed.');
+                return null;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showError('editProfileError', 'Image must be under 5 MB.');
+                return null;
+            }
+
+            // Show progress
+            const progressWrap = document.getElementById('uploadProgressWrap');
+            const progressFill = document.getElementById('uploadProgressFill');
+            const progressText = document.getElementById('uploadProgressText');
+            if (progressWrap) progressWrap.style.display = 'block';
+            if (progressFill) progressFill.style.width = '20%';
+            if (progressText) progressText.textContent = 'Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('type', 'profile');
+                const res = await fetch(`${API_URL}/upload-image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+
+                if (progressFill) progressFill.style.width = '90%';
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    showError('editProfileError', err.error || 'Upload failed. Try again.');
+                    if (progressWrap) progressWrap.style.display = 'none';
+                    return null;
+                }
+
+                const data = await res.json();
+                if (progressFill) progressFill.style.width = '100%';
+                if (progressText) progressText.textContent = 'Upload complete ✅';
+                // /api/upload-image returns { imageUrl, filename }
+                return data.imageUrl || data.url || null;
+            } catch (err) {
+                showError('editProfileError', 'Upload failed. Check connection.');
+                if (progressWrap) progressWrap.style.display = 'none';
+                return null;
+            }
+        }
+
+        // Update Profile (with Cloudinary upload support)
+        async function updateProfile() {
+            const name = document.getElementById('editName').value.trim();
+            if (!name) { showError('editProfileError', 'Name is required.'); return; }
+
+            // Use pending uploaded URL, or keep existing
+            let picture = pendingProfilePicUrl || currentUser.picture || '';
+
+            try {
+                const response = await fetch(`${API_URL}/users/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name, picture })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser.name = name;
+                    currentUser.picture = picture;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                    document.getElementById('userName').textContent = name;
+                    const avatarContainer = document.getElementById('userAvatar');
+                    if (picture) {
+                        avatarContainer.innerHTML = `<img src="${getFullImageUrl(picture)}" alt="Profile">`;
+                    }
+
+                    pendingProfilePicUrl = null;
+                    showSuccess('editProfileSuccess', 'Profile updated successfully!');
+                    setTimeout(() => { closeModal('editProfileModal'); }, 1500);
+                } else {
+                    showError('editProfileError', data.error || 'Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Update profile error:', error);
+                showError('editProfileError', 'Failed to connect to server');
+            }
+        }
+
+        // Show Change Password Modal
+        function showChangePassword() {
+            document.getElementById('userDropdown').classList.remove('active');
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('changePasswordModal').classList.add('active');
+        }
+
+        // Change Password
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showError('changePasswordError', 'New passwords do not match');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showError('changePasswordError', 'Password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/users/password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('changePasswordSuccess', 'Password changed successfully!');
+                    setTimeout(() => {
+                        closeModal('changePasswordModal');
+                    }, 1500);
+                } else {
+                    showError('changePasswordError', data.error || 'Failed to change password');
+                }
+            } catch (error) {
+                console.error('Change password error:', error);
+                showError('changePasswordError', 'Failed to connect to server');
+            }
+        }
+
+        // Show Payment History Modal
+        async function showPaymentHistory() {
+            document.getElementById('userDropdown').classList.remove('active');
+            document.getElementById('paymentHistoryModal').classList.add('active');
+
+            try {
+                const response = await fetch(`${API_URL}/payments/history`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const payments = await response.json();
+                const container = document.getElementById('paymentHistoryContent');
+
+                if (payments.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999; padding: 30px;">No payment history</p>';
+                } else {
+                    container.innerHTML = `
+                        <table class="payment-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Order ID</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${payments.map(payment => `
+                                    <tr>
+                                        <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+                                        <td>${payment.order_id}</td>
+                                        <td>₹${payment.amount}</td>
+                                        <td>
+                                            <span class="payment-status payment-${payment.status}">
+                                                ${payment.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load payment history:', error);
+                document.getElementById('paymentHistoryContent').innerHTML =
+                    '<p style="text-align: center; color: #f44; padding: 30px;">Failed to load payment history</p>';
+            }
+        }
+
+        // Show Feedback Modal
+        function showFeedback() {
+            document.getElementById('userDropdown').classList.remove('active');
+            document.getElementById('feedbackForm').reset();
+            document.getElementById('feedbackRating').value = '0';
+            document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+            document.getElementById('feedbackModal').classList.add('active');
+        }
+
+        // Set Rating
+        function setRating(rating) {
+            document.getElementById('feedbackRating').value = rating;
+            document.querySelectorAll('.star').forEach(star => {
+                if (parseInt(star.getAttribute('data-rating')) <= parseInt(rating)) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        // Submit Feedback
+        async function submitFeedback() {
+            const rating = document.getElementById('feedbackRating').value;
+            const category = document.getElementById('feedbackCategory').value;
+            const message = document.getElementById('feedbackMessage').value;
+
+            if (rating === '0') {
+                showError('feedbackError', 'Please select a rating');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ rating, category, message })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                if (data.success) {
+                    showSuccess('feedbackSuccess', 'Thank you for your feedback!');
+                    setTimeout(() => {
+                        closeModal('feedbackModal');
+                    }, 1500);
+                } else {
+                    showError('feedbackError', data.error || 'Failed to submit feedback');
+                }
+            } catch (error) {
+                console.error('Submit feedback error:', error);
+                showError('feedbackError', 'Failed to connect to server');
+            }
+        }
+
+        // Show Compliance Modal
+        function showCompliance() {
+            document.getElementById('userDropdown').classList.remove('active');
+            document.getElementById('complianceModal').classList.add('active');
+        }
+
+        // Close Modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            const errorElement = document.querySelector(`#${modalId} .error-message`);
+            const successElement = document.querySelector(`#${modalId} .success-message`);
+            if (errorElement) errorElement.style.display = 'none';
+            if (successElement) successElement.style.display = 'none';
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            if (socket) socket.disconnect();
+            location.reload();
+        }
+
+        // Show Error
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show Success
+        function showSuccess(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 3000);
+        }
+
+        // Show Toast
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // 401 — Token expired or invalid: force re-login
+        function handleUnauthorized() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            showToast('⚠️ Session expired. Please log in again.');
+            setTimeout(() => {
+                document.getElementById('appContainer').classList.remove('active');
+                document.getElementById('authContainer').classList.add('active');
+            }, 1000);
+        }
+
+        // Request Notification Permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // ==========================================
+        // BUDGET MODE LOGIC
+        // ==========================================
+        async function generateBudgetCombos() {
+            const budgetInput = document.getElementById('budgetInput');
+            const budget = parseFloat(budgetInput.value);
+            const recommendationsContainer = document.getElementById('budgetRecommendations');
+
+            if (isNaN(budget) || budget <= 0) {
+                showToast('Please enter a valid budget amount');
+                return;
+            }
+
+            recommendationsContainer.innerHTML = '<div class="no-results-msg"><span>🔍 Finding the best combos for you...</span></div>';
+
+            // Get available items from the loaded menu
+            const availableItems = menuItems.filter(item => item.stock > 0);
+
+            if (availableItems.length === 0) {
+                recommendationsContainer.innerHTML = '<div class="no-results-msg"><span>⚠️ No items in stock. Please check back later.</span></div>';
+                return;
+            }
+
+            // Define logical categories
+            const beverages = availableItems.filter(i => i.category === 'Beverages & Snacks' && (i.name.toLowerCase().includes('tea') || i.name.toLowerCase().includes('coffee') || i.name.toLowerCase().includes('juice') || i.name.toLowerCase().includes('milk')));
+            const snacks = availableItems.filter(i => i.category === 'Beverages & Snacks' && !beverages.includes(i));
+            const mainMeals = availableItems.filter(i => ['Rice & Noodles', 'Tiffin / Parotta Varieties', 'Dosa & Egg Items', 'Fast Food & Savouries'].includes(i.category));
+            const sweets = availableItems.filter(i => i.category === 'Bakery & Sweets');
+
+            const combos = [];
+            const usedComboKeys = new Set();
+
+            // 1. Prioritize combinations from past orders if available
+            if (completedOrders && completedOrders.length > 0) {
+                const pastPairs = [];
+                completedOrders.forEach(order => {
+                    if (order.items && order.items.length >= 2) {
+                        for (let i = 0; i < order.items.length; i++) {
+                            for (let j = i + 1; j < order.items.length; j++) {
+                                const item1 = availableItems.find(it => it.id === order.items[i].item_id);
+                                const item2 = availableItems.find(it => it.id === order.items[j].item_id);
+                                if (item1 && item2 && (item1.price + item2.price) <= budget) {
+                                    pastPairs.push([item1, item2]);
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Shuffle and take a few past pairs
+                pastPairs.sort(() => Math.random() - 0.5);
+                for (const pair of pastPairs) {
+                    const key = pair.map(p => p.id).sort().join('_');
+                    if (!usedComboKeys.has(key)) {
+                        combos.push({
+                            title: '🌟 Based on your history',
+                            items: pair,
+                            total: pair[0].price + pair[1].price
+                        });
+                        usedComboKeys.add(key);
+                        if (combos.length >= 2) break;
+                    }
+                }
+            }
+
+            // 2. Add logical pairings
+            const pairingGens = [
+                // Main + Beverage
+                () => {
+                    if (mainMeals.length && beverages.length) {
+                        const m = mainMeals[Math.floor(Math.random() * mainMeals.length)];
+                        const b = beverages[Math.floor(Math.random() * beverages.length)];
+                        if (m.price + b.price <= budget) return [m, b];
+                    }
+                },
+                // Snack + Beverage
+                () => {
+                    if (snacks.length && beverages.length) {
+                        const s = snacks[Math.floor(Math.random() * snacks.length)];
+                        const b = beverages[Math.floor(Math.random() * beverages.length)];
+                        if (s.price + b.price <= budget) return [s, b];
+                    }
+                },
+                // Single Main Meal (just under budget)
+                () => {
+                    if (mainMeals.length) {
+                        const affordable = mainMeals.filter(m => m.price <= budget);
+                        if (affordable.length) {
+                            return [affordable[Math.floor(Math.random() * affordable.length)]];
+                        }
+                    }
+                },
+                // Sweet + Beverage
+                () => {
+                    if (sweets.length && beverages.length) {
+                        const s = sweets[Math.floor(Math.random() * sweets.length)];
+                        const b = beverages[Math.floor(Math.random() * beverages.length)];
+                        if (s.price + b.price <= budget) return [s, b];
+                    }
+                }
+            ];
+
+            // Try to fill up to 5 combos
+            let attempts = 0;
+            while (combos.length < 5 && attempts < 50) {
+                attempts++;
+                const gen = pairingGens[Math.floor(Math.random() * pairingGens.length)];
+                const pair = gen();
+                if (pair) {
+                    const key = pair.map(p => p.id).sort().join('_');
+                    if (!usedComboKeys.has(key)) {
+                        combos.push({
+                            title: pair.length > 1 ? '🍽️ Perfect Pairing' : '🍱 Value Meal',
+                            items: pair,
+                            total: pair.reduce((sum, item) => sum + item.price, 0)
+                        });
+                        usedComboKeys.add(key);
+                    }
+                }
+            }
+
+            if (combos.length === 0) {
+                recommendationsContainer.innerHTML = `
+                    <div class="no-results-msg">
+                        <span>⚠️ No items available within this budget (₹${budget}).<br>Try increasing your amount.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render combos
+            recommendationsContainer.innerHTML = combos.map((combo, idx) => `
+                <div class="combo-card">
+                    <span class="combo-badge">Within Budget</span>
+                    <div class="combo-title">${combo.title}</div>
+                    <ul class="combo-items-list">
+                        ${combo.items.map(item => `
+                            <li class="combo-item">
+                                <span>${item.name}</span>
+                                <span>₹${item.price}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <div class="combo-total">
+                        <span>TOTAL:</span>
+                        <span>₹${combo.total} ✅</span>
+                    </div>
+                    <button class="add-combo-btn" onclick='addComboToCart(${JSON.stringify(combo.items.map(i => ({ id: i.id || i.item_id }))).replace(/'/g, "&apos;")})'>
+                        🛒 Add Combo to Cart
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addComboToCart(items) {
+            items.forEach(item => {
+                const index = menuItems.findIndex(mi => (mi.id === item.id || mi.item_id === item.id));
+                if (index !== -1) {
+                    addToCart(index);
+                }
+            });
+            showToast(`Added ${items.length} items to your cart! 🎉`);
+            // Switch to cart tab
+            switchTab(null, 'cart');
+        }
+
+        // ==========================================
+        // ENHANCED: switchTab — hides category chips on non-menu tabs
+        // ==========================================
+        function switchTab(event, tab) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Remove active from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            // Activate target tab
+            const tabEl = document.getElementById(tab + 'Tab');
+            if (tabEl) tabEl.classList.add('active');
+            if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+            // Category chips: only visible on Menu tab
+            const filterSection = document.querySelector('.search-and-filter-section');
+            if (filterSection) {
+                if (tab === 'menu') {
+                    filterSection.classList.remove('hide-chips');
+                } else {
+                    filterSection.classList.add('hide-chips');
+                }
+            }
+
+            // Scroll to top of content area smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==========================================
+        // ENHANCED: generateBudgetCombos — 60-95% spend range, up to 4 items, varied combos
+        // ==========================================
+        async function generateBudgetCombos() {
+            const budgetInput = document.getElementById('budgetInput');
+            const budget = parseFloat(budgetInput.value);
+            const recommendationsContainer = document.getElementById('budgetRecommendations');
+
+            if (isNaN(budget) || budget <= 0) {
+                showToast('Please enter a valid budget amount');
+                return;
+            }
+
+            recommendationsContainer.innerHTML = '<div class="no-results-msg">🔍 Finding the best combos for you...</div>';
+
+            const availableItems = menuItems.filter(i => i.stock > 0 && i.price <= budget);
+
+            if (availableItems.length === 0) {
+                recommendationsContainer.innerHTML = '<div class="no-results-msg">⚠️ No items in stock. Please check back later.</div>';
+                return;
+            }
+
+            const minSpend = budget * 0.60;
+            const maxSpend = budget * 0.95;
+
+            // Categorise items
+            const beverages = availableItems.filter(i => i.category === 'Beverages & Snacks' && /tea|coffee|juice|milk|lassi/i.test(i.name));
+            const snacks = availableItems.filter(i => i.category === 'Beverages & Snacks' && !beverages.includes(i));
+            const mains = availableItems.filter(i => ['Rice & Noodles', 'Tiffin / Parotta Varieties', 'Dosa & Egg Items', 'Fast Food & Savouries'].includes(i.category));
+            const sweets = availableItems.filter(i => i.category === 'Bakery & Sweets');
+            const all = availableItems;
+
+            // Greedy combo builder: pick items summing within [minSpend, maxSpend]
+            function buildCombo(pool, maxItems = 4) {
+                const shuffled = [...pool].sort(() => Math.random() - 0.5);
+                const picked = [];
+                let total = 0;
+                for (const item of shuffled) {
+                    if (picked.length >= maxItems) break;
+                    if (total + item.price <= maxSpend) {
+                        picked.push(item);
+                        total += item.price;
+                        if (total >= minSpend) break;
+                    }
+                }
+                if (total < minSpend && picked.length < maxItems) {
+                    // Try to fill remaining budget
+                    for (const item of shuffled) {
+                        if (picked.includes(item)) continue;
+                        if (total + item.price <= maxSpend && picked.length < maxItems) {
+                            picked.push(item);
+                            total += item.price;
+                            if (total >= minSpend) break;
+                        }
+                    }
+                }
+                return picked.length > 0 && total >= minSpend ? { items: picked, total } : null;
+            }
+
+            const strategies = [
+                { label: '🌟 Based on your history', pool: mains.length ? mains : all, priority: completedOrders.length > 0 },
+                { label: '🍽️ Main + Drink', pool: [...mains, ...beverages] },
+                { label: '🥐 Snack + Drink', pool: [...snacks, ...beverages] },
+                { label: '🍱 Full Meal Deal', pool: all },
+                { label: '🍰 Sweet Treat Combo', pool: [...sweets, ...beverages, ...snacks] },
+                { label: '🔥 Value Combo', pool: all },
+                { label: '⚡ Quick Bite', pool: [...snacks, ...mains] },
+            ];
+
+            const combos = [];
+            const usedKeys = new Set();
+
+            for (const strat of strategies) {
+                if (combos.length >= 5) break;
+                let tries = 0;
+                while (tries++ < 12) {
+                    const result = buildCombo(strat.pool);
+                    if (!result) break;
+                    const key = result.items.map(i => i.item_id || i.id).sort().join('_');
+                    if (!usedKeys.has(key)) {
+                        usedKeys.add(key);
+                        combos.push({ title: strat.label, ...result });
+                        break;
+                    }
+                }
+            }
+
+            if (combos.length === 0) {
+                recommendationsContainer.innerHTML = `<div class="no-results-msg">⚠️ No combos found within ₹${budget}. Try a higher amount.</div>`;
+                return;
+            }
+
+            recommendationsContainer.innerHTML = combos.map((combo, idx) => `
+                <div class="combo-card reveal" style="transition-delay:${idx * 0.08}s">
+                    <span class="combo-badge">✅ Within Budget</span>
+                    <div class="combo-title">${combo.title}</div>
+                    <ul class="combo-items-list">
+                        ${combo.items.map(item => `
+                            <li class="combo-item">
+                                <span>${item.name}</span>
+                                <span>₹${item.price}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <div class="combo-total">
+                        <span>Total</span>
+                        <span>₹${combo.total} &nbsp;<small style="font-size:11px;opacity:0.7">(${Math.round((combo.total / budget) * 100)}% of budget)</small></span>
+                    </div>
+                    <button class="add-combo-btn" onclick='addComboToCart(${JSON.stringify(combo.items.map(i => ({ id: i.id || i.item_id }))).replace(/'/g, "&apos;")})'>
+                        🛒 Add Combo to Cart
+                    </button>
+                </div>
+            `).join('');
+
+            // Trigger scroll reveal for new combo cards
+            requestAnimationFrame(() => observeRevealElements());
+        }
+
+        // ── Scroll reveal: MutationObserver tags new menu cards safely ──
+        // (NO function re-declarations — avoids JS hoisting / infinite-recursion bug)
+        document.addEventListener('DOMContentLoaded', () => {
+            // observeRevealElements(); // REMOVED
+
+            const menuGrid = document.getElementById('menuGrid');
+            if (menuGrid) {
+                // REMOVED MutationObserver for reveal effects
+
+                // Premium add-to-cart button feedback via event delegation
+                menuGrid.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.add-to-cart-btn');
+                    if (!btn || btn.classList.contains('disabled')) return;
+                    // Small delay so addToCart() logic & displayMenu() re-render run first
+                    setTimeout(() => {
+                        // After displayMenu re-renders, find the button by item index
+                        const card = btn.closest('.menu-item');
+                        if (!card) return;
+                        const itemId = card.getAttribute('data-item-id');
+                        // Find updated button in re-rendered grid
+                        const fresh = menuGrid.querySelector(`[data-item-id="${itemId}"] .add-to-cart-btn`);
+                        if (fresh && fresh.textContent.trim().startsWith('Update')) {
+                            fresh.classList.remove('pulse');
+                            void fresh.offsetWidth;
+                            fresh.classList.add('pulse', 'in-cart');
+                        }
+                    }, 50);
+                });
+            }
+
+            // ── ITEM 10: Re-check meal-time availability every 60 s ──
+            // Automatically unlocks/locks items as the clock crosses their time window.
+            setInterval(() => {
+                if (menuItems.length > 0 && document.getElementById('menuGrid')) {
+                    displayMenu(currentCategory);
+                }
+            }, 60000);
+
+        });
+
+    </script>
+</body>
+
+</html>

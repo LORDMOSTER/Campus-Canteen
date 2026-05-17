@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter POS - Campus Canteen</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF for receipt generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+
+<body>
+    <div class="pos-container">
+        <!-- Sidebar / Navigation -->
+        <nav class="pos-sidebar">
+            <div class="brand">
+                <h1>CANTEEN<span>POS</span></h1>
+            </div>
+            <div class="categories" id="category-list">
+                <button class="cat-btn active" data-category="All">All Items</button>
+                <!-- Categories will be injected here -->
+            </div>
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="dot" id="socket-status"></span>
+                    <span id="status-text">Connecting...</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="pos-main">
+            <header class="pos-header">
+                <div class="search-box">
+                    <input type="text" id="item-search" placeholder="Search menu items...">
+                </div>
+                <div class="staff-info">
+                    <div id="canteen-id-badge" class="canteen-badge">Canteen: Loading...</div>
+                    <span id="current-time"></span>
+                </div>
+            </header>
+
+            <div class="menu-grid" id="menu-grid">
+                <!-- Menu items will be injected here -->
+            </div>
+        </main>
+
+        <!-- Cart Panel -->
+        <aside class="pos-cart">
+            <div class="cart-header">
+                <h2>Current Order</h2>
+                <button id="clear-cart" class="btn-text">Clear All</button>
+            </div>
+
+            <div class="cart-items" id="cart-list">
+                <!-- Cart items will be injected here -->
+                <div class="empty-cart-msg">
+                    Cart is empty. Select items from the menu.
+                </div>
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-line">
+                    <span>Subtotal</span>
+                    <span id="subtotal">₹0.00</span>
+                </div>
+                <div class="summary-line">
+                    <span>Tax (0%)</span>
+                    <span>₹0.00</span>
+                </div>
+                <div class="summary-line total">
+                    <span>Total Amount</span>
+                    <span id="total-amount">₹0.00</span>
+                </div>
+            </div>
+
+            <div class="payment-methods">
+                <p>Payment Method</p>
+                <div class="payment-options">
+                    <label class="pay-opt">
+                        <input type="radio" name="payment" value="cash" checked>
+                        <span>Cash</span>
+                    </label>
+                    <label class="pay-opt">
+                        <input type="radio" name="payment" value="upi">
+                        <span>UPI</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="checkout-btn" class="checkout-btn" disabled>
+                Complete Checkout
+            </button>
+        </aside>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-icon success">✓</div>
+            <h3>Payment Received</h3>
+            <p id="modal-order-id" class="order-id-display">Order #POS_123456789</p>
+            <div class="qr-container">
+                <img id="modal-qr" src="" alt="Order QR Code">
+            </div>
+            <p id="modal-msg">Created successfully.</p>
+            <div class="modal-actions">
+                <button id="close-modal" class="btn-primary">New Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
