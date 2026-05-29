@@ -1717,7 +1717,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 ## 📞 Support & Contact
 
 - **Issues**: Create GitHub issue for bugs/features
-- **Email**: lordmoster@example.com
+- **Email**: hsri59145@gmail.com
 - **Documentation**: See WINDOWS_SETUP_GUIDE.md
 - **FAQ**: See QUICK_REFERENCE.md
 
@@ -1762,6 +1762,6 @@ Building Campus Canteen teaches:
 
 **Last Updated**: May 29, 2026  
 **Version**: 1.0.0  
-**Maintained By**: LORDMOSTER
+**Maintained By**: SRIHARI P V
 
 🍜 **Happy Ordering!** 🎉
