@@ -192,9 +192,79 @@ Campus Canteen provides:
 
 ### High-Level Architecture Diagram
 
-┌─────────────────────────────────────────────────────────────────┐ │ FRONTEND TIER │ ├─────────────────────────────────────────────────────────────────┤ │ │ │ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │ │ │ Student App │ │ Vendor Panel │ │ Web Browser │ │ │ │ (HTML5) │ │ (HTML5) │ │ │ │ │ └──────────────┘ └──────────────┘ └──────────────┘ │ │ │ │ │ │ │ └───────────────────┼────────────────┘ │ │ │ │ │ HTTP/WebSocket │ │ │ │ └────────────────────────────┼─────────────────────────────────────┘ │ ┌────────────────────────────┼─────────────────────────────────────┐ │ APPLICATION TIER │ ├────────────────────────────┼─────────────────────────────────────┤ │ │ │ │ ┌─────────────────────────────────────────────────────┐ │ │ │ Node.js Express Server │ │ │ │ ┌──────────────┐ ┌──────────────┐ │ │ │ │ │ REST API │ │ WebSocket │ │ │ │ │ │ Endpoints │ │ Manager │ │ │ │ │ └──────────────┘ └──────────────┘ │ │ │ │ │ │ │ │ Routes: │ │ │ │ • /api/auth (Login/Register) │ │ │ │ • /api/menu (Menu Management) │ │ │ │ • /api/orders (Order Handling) │ │ │ │ • /api/inventory (Stock Management) │ │ │ │ • /api/payment (Payment Processing) │ │ │ │ • /api/analytics (Business Analytics) │ │ │ │ • /api/ai (AI Recommendations) │ │ │ └─────────────────────────────────────────────────────┘ │ │ │ │ └────────────────────────────┼─────────────────────────────────────┘ │ ┌────────────────────────────┼─────────────────────────────────────┐ │ DATA TIER │ ├────────────────────────────┼─────────────────────────────────────┤ │ │ │ │ ┌────────────────────────────────────┐ │ │ │ SQLite Database (database.db) │ │ │ │ │ │ │ │ ┌──────────────────────────────┐ │ │ │ │ │ Users Table │ │ │ │ │ │ • student_id, email, pwd │ │ │ │ │ │ • vendor_id, business_name │ │ │ │ │ └──────────────────────────────┘ │ │ │ │ │ │ │ │ ┌──────────────────────────────┐ │ │ │ │ │ Menu Table │ │ │ │ │ │ • item_id, name, price │ │ │ │ │ │ • category, stock, image │ │ │ │ │ └──────────────────────────────┘ │ │ │ │ │ │ │ │ ┌──────────────────────────────┐ │ │ │ │ │ Orders Table │ │ │ │ │ │ • order_id, student_id │ │ │ │ │ │ • items, total, status │ │ │ │ │ └──────────────────────────────┘ │ │ │ │ │ │ │ │ ┌──────────────────────────────┐ │ │ │ │ │ Inventory Table │ │ │ │ │ │ • ingredient_id, quantity │ │ │ │ │ │ • unit, last_updated │ │ │ │ │ └──────────────────────────────┘ │ │ │ └────────────────────────────────────┘ │ │ │ └──────────────────────────────────────────────────────────────────┘
-
-Code
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND TIER                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │  Student App │  │ Vendor Panel │  │ Web Browser  │           │
+│  │  (HTML5)     │  │  (HTML5)     │  │              │           │
+│  └──────────────┘  └──────────────┘  └──────────────┘           │
+│        │                   │                │                    │
+│        └───────────────────┼────────────────┘                    │
+│                            │                                     │
+│                    HTTP/WebSocket                               │
+│                            │                                     │
+└────────────────────────────┼─────────────────────────────────────┘
+                             │
+┌────────────────────────────┼─────────────────────────────────────┐
+│                    APPLICATION TIER                              │
+├────────────────────────────┼─────────────────────────────────────┤
+│                            │                                     │
+│  ┌─────────────────────────────────────────────────────┐         │
+│  │            Node.js Express Server                   │         │
+│  │  ┌──────────────┐  ┌──────────────┐                │         │
+│  │  │   REST API   │  │  WebSocket   │                │         │
+│  │  │  Endpoints   │  │  Manager     │                │         │
+│  │  └──────────────┘  └──────────────┘                │         │
+│  │                                                     │         │
+│  │  Routes:                                           │         │
+│  │  • /api/auth (Login/Register)                     │         │
+│  │  • /api/menu (Menu Management)                    │         │
+│  │  • /api/orders (Order Handling)                   │         │
+│  │  • /api/inventory (Stock Management)              │         │
+│  │  • /api/payment (Payment Processing)              │         │
+│  │  • /api/analytics (Business Analytics)            │         │
+│  │  • /api/ai (AI Recommendations)                   │         │
+│  └─────────────────────────────────────────────────────┘         │
+│                            │                                     │
+└────────────────────────────┼─────────────────────────────────────┘
+                             │
+┌────────────────────────────┼─────────────────────────────────────┐
+│                     DATA TIER                                    │
+├────────────────────────────┼─────────────────────────────────────┤
+│                            │                                     │
+│  ┌────────────────────────────────────┐                         │
+│  │   SQLite Database (database.db)    │                         │
+│  │                                    │                         │
+│  │  ┌──────────────────────────────┐  │                         │
+│  │  │  Users Table                 │  │                         │
+│  │  │  • student_id, email, pwd    │  │                         │
+│  │  │  • vendor_id, business_name  │  │                         │
+│  │  └──────────────────────────────┘  │                         │
+│  │                                    │                         │
+│  │  ┌──────────────────────────────┐  │                         │
+│  │  │  Menu Table                  │  │                         │
+│  │  │  • item_id, name, price      │  │                         │
+│  │  │  • category, stock, image    │  │                         │
+│  │  └──────────────────────────────┘  │                         │
+│  │                                    │                         │
+│  │  ┌──────────────────────────────┐  │                         │
+│  │  │  Orders Table                │  │                         │
+│  │  │  • order_id, student_id      │  │                         │
+│  │  │  • items, total, status      │  │                         │
+│  │  └──────────────────────────────┘  │                         │
+│  │                                    │                         │
+│  │  ┌──────────────────────────────┐  │                         │
+│  │  │  Inventory Table             │  │                         │
+│  │  │  • ingredient_id, quantity   │  │                         │
+│  │  │  • unit, last_updated        │  │                         │
+│  │  └──────────────────────────────┘  │                         │
+│  └────────────────────────────────────┘                         │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ### Architecture Layers
 
@@ -270,9 +340,79 @@ Code
 
 ## 📁 Project Structure
 
-campus-canteen/ │ ├── 📄 README.md # Main documentation ├── 📄 README_PROFESSIONAL.md # This file ├── 📄 WINDOWS_SETUP_GUIDE.md # Windows installation guide ├── 📄 QUICK_REFERENCE.md # Quick feature reference ├── 📄 package.json # Root dependencies │ ├── 📁 backend/ # Node.js Express Server │ ├── 📄 server.js # Main server entry point │ ├── 📄 database.js # Database initialization │ ├── 📄 package.json # Backend dependencies │ │ │ ├── 📁 routes/ # API route handlers │ │ ├── 📄 auth.js # Authentication routes │ │ ├── 📄 menu.js # Menu management routes │ │ ├── 📄 orders.js # Order processing routes │ │ ├── 📄 inventory.js # Inventory routes │ │ ├── 📄 payment.js # Payment routes │ │ ├── 📄 analytics.js # Analytics routes │ │ └── 📄 ai.js # AI advisor routes │ │ │ ├── 📁 models/ # Data models │ │ ├── 📄 User.js # User model │ │ ├── 📄 Order.js # Order model │ │ ├── 📄 MenuItem.js # Menu item model │ │ └── 📄 Inventory.js # Inventory model │ │ │ ├── 📁 middleware/ # Express middleware │ │ ├── 📄 auth.js # Authentication middleware │ │ ├── 📄 errorHandler.js # Error handling │ │ └── 📄 validation.js # Input validation │ │ │ ├── 📁 utils/ # Utility functions │ │ ├── 📄 emailService.js # Email sending │ │ ├── 📄 aiService.js # AI integration │ │ ├── 📄 qrGenerator.js # QR code generation │ │ └── 📄 logger.js # Logging utility │ │ │ ├── 📁 uploads/ # File storage │ │ └── 📁 menu-images/ # Menu item images │ │ │ └── 📁 config/ # Configuration files │ ├── 📄 database.config.js # DB configuration │ ├── 📄 payment.config.js # Razorpay config │ └── 📄 email.config.js # Email configuration │ ├── 📁 student-app/ # Student Portal │ ├── 📄 index.html # Student app interface │ ├── 📄 style.css # Student styling │ ├── 📄 script.js # Student logic │ └── 📄 README.md # Student app docs │ ├── 📁 vendor-dashboard/ # Vendor Portal │ ├── 📄 index.html # Vendor dashboard UI │ ├── 📄 style.css # Vendor styling │ ├── 📄 script.js # Vendor logic │ └── 📄 README.md # Vendor docs │ ├── 📁 scripts/ # Batch files (Windows) │ ├── 📄 install-backend.bat # Install dependencies │ ├── 📄 start-server.bat # Start backend server │ ├── 📄 open-student-app.bat # Launch student app │ └── 📄 open-vendor-dashboard.bat # Launch vendor dashboard │ └── 📁 docs/ # Additional documentation ├── 📄 API_REFERENCE.md # Complete API docs ├── 📄 DATABASE_SCHEMA.md # DB structure ├── 📄 DEPLOYMENT.md # Deployment guide └── 📄 DEVELOPMENT.md # Development guide
+```
+campus-canteen/
+│
+├── 📄 README.md                          # Main documentation
+├── 📄 README_PROFESSIONAL.md             # This file
+├── 📄 WINDOWS_SETUP_GUIDE.md             # Windows installation guide
+├── 📄 QUICK_REFERENCE.md                 # Quick feature reference
+├── 📄 package.json                       # Root dependencies
+│
+├── 📁 backend/                           # Node.js Express Server
+│   ├── 📄 server.js                      # Main server entry point
+│   ├── 📄 database.js                    # Database initialization
+│   ├── 📄 package.json                   # Backend dependencies
+│   │
+│   ├── 📁 routes/                        # API route handlers
+│   │   ├── 📄 auth.js                    # Authentication routes
+│   │   ├── 📄 menu.js                    # Menu management routes
+│   │   ├── 📄 orders.js                  # Order processing routes
+│   │   ├── 📄 inventory.js               # Inventory routes
+│   │   ├── 📄 payment.js                 # Payment routes
+│   │   ├── 📄 analytics.js               # Analytics routes
+│   │   └── 📄 ai.js                      # AI advisor routes
+│   │
+│   ├── 📁 models/                        # Data models
+│   │   ├── 📄 User.js                    # User model
+│   │   ├── 📄 Order.js                   # Order model
+│   │   ├── 📄 MenuItem.js                # Menu item model
+│   │   └── 📄 Inventory.js               # Inventory model
+│   │
+│   ├── 📁 middleware/                    # Express middleware
+│   │   ├── 📄 auth.js                    # Authentication middleware
+│   │   ├── 📄 errorHandler.js            # Error handling
+│   │   └── 📄 validation.js              # Input validation
+│   │
+│   ├── 📁 utils/                         # Utility functions
+│   │   ├── 📄 emailService.js            # Email sending
+│   │   ├── 📄 aiService.js               # AI integration
+│   │   ├── 📄 qrGenerator.js             # QR code generation
+│   │   └── 📄 logger.js                  # Logging utility
+│   │
+│   ├── 📁 uploads/                       # File storage
+│   │   └── 📁 menu-images/               # Menu item images
+│   │
+│   └── 📁 config/                        # Configuration files
+│       ├── 📄 database.config.js         # DB configuration
+│       ├── 📄 payment.config.js          # Razorpay config
+│       └── 📄 email.config.js            # Email configuration
+│
+├── 📁 student-app/                       # Student Portal
+│   ├── 📄 index.html                     # Student app interface
+│   ├── 📄 style.css                      # Student styling
+│   ├── 📄 script.js                      # Student logic
+│   └── 📄 README.md                      # Student app docs
+│
+├── 📁 vendor-dashboard/                  # Vendor Portal
+│   ├── 📄 index.html                     # Vendor dashboard UI
+│   ├── 📄 style.css                      # Vendor styling
+│   ├── 📄 script.js                      # Vendor logic
+│   └── 📄 README.md                      # Vendor docs
+│
+├── 📁 scripts/                           # Batch files (Windows)
+│   ├── 📄 install-backend.bat            # Install dependencies
+│   ├── 📄 start-server.bat               # Start backend server
+│   ├── 📄 open-student-app.bat           # Launch student app
+│   └── 📄 open-vendor-dashboard.bat      # Launch vendor dashboard
+│
+└── 📁 docs/                              # Additional documentation
+    ├── 📄 API_REFERENCE.md               # Complete API docs
+    ├── 📄 DATABASE_SCHEMA.md             # DB structure
+    ├── 📄 DEPLOYMENT.md                  # Deployment guide
+    └── 📄 DEVELOPMENT.md                 # Development guide
 
-Code
+```
 
 ---
 
@@ -298,14 +438,18 @@ cd canteen-system
 
 # Create subdirectories
 mkdir backend student-app vendor-dashboard
-Step 2: Copy Backend Files
-bash
+```
+
+#### Step 2: Copy Backend Files
+```bash
 # Place these files in backend/ folder:
 # - server.js
 # - database.js
 # - package.json
-Step 3: Copy Frontend Files
-bash
+```
+
+#### Step 3: Copy Frontend Files
+```bash
 # In student-app/ folder:
 # - Rename your student HTML file to index.html
 # - Add corresponding CSS and JS files
@@ -313,22 +457,28 @@ bash
 # In vendor-dashboard/ folder:
 # - Rename your vendor HTML file to index.html
 # - Add corresponding CSS and JS files
-Step 4: Copy Batch Scripts
-bash
+```
+
+#### Step 4: Copy Batch Scripts
+```bash
 # Place all .bat files in the main canteen-system/ folder:
 # - install-backend.bat
 # - start-server.bat
 # - open-student-app.bat
 # - open-vendor-dashboard.bat
-Step 5: Install Backend Dependencies
-bash
+```
+
+#### Step 5: Install Backend Dependencies
+```bash
 # Windows: Double-click install-backend.bat
 # OR manually:
 cd backend
 npm install
 cd ..
-Step 6: Verify Installation
-bash
+```
+
+#### Step 6: Verify Installation
+```bash
 # Check Node.js
 node --version
 
@@ -339,9 +489,12 @@ npm --version
 cd backend
 npm start
 # Should display: "✅ Server running on http://localhost:3000"
-Configuration
-Backend Configuration (server.js)
-JavaScript
+```
+
+### Configuration
+
+#### Backend Configuration (server.js)
+```javascript
 // Default settings:
 const PORT = 3000;
 const STUDENT_EMAIL = 'student@canteen.com';
@@ -351,33 +504,45 @@ const VENDOR_PASSWORD = 'vendor123';
 
 // To change:
 // Edit server.js and modify the constants at the top
-Database Reset
-bash
+```
+
+#### Database Reset
+```bash
 # To reset the database to fresh state:
 cd backend
 rm database.db
 npm start
 # New database will be created automatically
-📖 Usage Guide
-Quick Start (3 Minutes)
-Start Backend Server
+```
 
-bash
-Double-click: start-server.bat
-# Keep this window open!
-Open Student App
+---
 
-bash
-Double-click: open-student-app.bat
-# Browser opens with student portal
-Open Vendor Dashboard
+## 📖 Usage Guide
 
-bash
-Double-click: open-vendor-dashboard.bat
-# New browser tab with vendor panel
-Student App Workflow
-1. Login/Register
-Code
+### Quick Start (3 Minutes)
+
+1. **Start Backend Server**
+   ```bash
+   Double-click: start-server.bat
+   # Keep this window open!
+   ```
+
+2. **Open Student App**
+   ```bash
+   Double-click: open-student-app.bat
+   # Browser opens with student portal
+   ```
+
+3. **Open Vendor Dashboard**
+   ```bash
+   Double-click: open-vendor-dashboard.bat
+   # New browser tab with vendor panel
+   ```
+
+### Student App Workflow
+
+#### 1. Login/Register
+```
 Home Screen
     ↓
 Click "Login" or "Sign Up"
@@ -385,8 +550,10 @@ Click "Login" or "Sign Up"
 Enter email & password
     ↓
 Dashboard
-2. Browse Menu
-Code
+```
+
+#### 2. Browse Menu
+```
 Dashboard
     ↓
 Click Category (e.g., "Rice & Noodles")
@@ -394,8 +561,10 @@ Click Category (e.g., "Rice & Noodles")
 See all items with real-time stock
     ↓
 Click item for details
-3. Use AI Budget Advisor
-Code
+```
+
+#### 3. Use AI Budget Advisor
+```
 Dashboard → AI Advisor
     ↓
 Enter Budget (e.g., ₹100)
@@ -405,8 +574,10 @@ AI generates 3-5 combo suggestions
 Select combo or customize
     ↓
 Add to cart
-4. Order & Payment
-Code
+```
+
+#### 4. Order & Payment
+```
 Add Items to Cart
     ↓
 Click "Checkout"
@@ -420,8 +591,10 @@ Razorpay payment page
 Complete payment
     ↓
 QR code generated
-5. Collect Food
-Code
+```
+
+#### 5. Collect Food
+```
 Show QR code at canteen counter
     ↓
 Vendor scans QR
@@ -431,16 +604,21 @@ Order appears on vendor's screen
 Collect food
     ↓
 Order marked complete
-Vendor Dashboard Workflow
-1. Login
-Code
+```
+
+### Vendor Dashboard Workflow
+
+#### 1. Login
+```
 Dashboard Login
     ↓
 Enter vendor@canteen.com / vendor123
     ↓
 Main Dashboard
-2. View Analytics
-Code
+```
+
+#### 2. View Analytics
+```
 Dashboard Home
     ↓
 See:
@@ -448,8 +626,10 @@ See:
 - Total Orders
 - 30-Day Trends Chart
 - Peak Hours
-3. Process Orders
-Code
+```
+
+#### 3. Process Orders
+```
 Live Order Queue (auto-refreshes)
     ↓
 Student QR scanned
@@ -459,8 +639,10 @@ Order displays in BIG text
 Press SPACEBAR to mark complete
     ↓
 Customer notified
-4. Manage Inventory
-Code
+```
+
+#### 4. Manage Inventory
+```
 Inventory → Raw Materials
     ↓
 Update ingredient quantities
@@ -468,8 +650,10 @@ Update ingredient quantities
 System auto-calculates available meals
     ↓
 Low stock alerts trigger
-5. Use AI Advisor
-Code
+```
+
+#### 5. Use AI Advisor
+```
 AI Advisor Section
     ↓
 Type Question (e.g., "What to prepare tomorrow?")
@@ -477,23 +661,29 @@ Type Question (e.g., "What to prepare tomorrow?")
 English, Tamil, or Tanglish supported
     ↓
 AI analyzes trends & suggests quantities
-🔌 API Documentation
-Authentication Endpoints
-POST /api/auth/register
+```
+
+---
+
+## 🔌 API Documentation
+
+### Authentication Endpoints
+
+#### POST /api/auth/register
 Register a new student or vendor account.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "email": "user@example.com",
   "password": "securePassword123",
   "fullName": "John Doe",
   "userType": "student" // or "vendor"
 }
-Response (Success - 201):
+```
 
-JSON
+**Response (Success - 201):**
+```json
 {
   "success": true,
   "message": "Account created successfully",
@@ -504,19 +694,21 @@ JSON
   },
   "token": "jwt_token_here"
 }
-POST /api/auth/login
+```
+
+#### POST /api/auth/login
 Login with email and password.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "email": "student@canteen.com",
   "password": "student123"
 }
-Response (Success - 200):
+```
 
-JSON
+**Response (Success - 200):**
+```json
 {
   "success": true,
   "message": "Login successful",
@@ -527,41 +719,46 @@ JSON
   },
   "token": "eyJhbGc..."
 }
-POST /api/auth/forgot-password
+```
+
+#### POST /api/auth/forgot-password
 Request password reset OTP.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "email": "student@canteen.com"
 }
-Response:
+```
 
-JSON
+**Response:**
+```json
 {
   "success": true,
   "message": "OTP sent to your email",
   "expiresIn": 600
 }
-POST /api/auth/reset-password
+```
+
+#### POST /api/auth/reset-password
 Reset password using OTP.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "email": "student@canteen.com",
   "otp": "123456",
   "newPassword": "newSecurePassword123"
 }
-Menu Endpoints
-GET /api/menu
+```
+
+### Menu Endpoints
+
+#### GET /api/menu
 Retrieve all menu items with real-time stock.
 
-Response:
-
-JSON
+**Response:**
+```json
 {
   "success": true,
   "items": [
@@ -576,18 +773,19 @@ JSON
     }
   ]
 }
-GET /api/menu/:category
+```
+
+#### GET /api/menu/:category
 Get items from specific category.
 
-Parameters:
+**Parameters:**
+- `category`: "Breakfast", "Lunch", "Snacks", "Beverages", "Desserts"
 
-category: "Breakfast", "Lunch", "Snacks", "Beverages", "Desserts"
-POST /api/menu (Vendor Only)
+#### POST /api/menu (Vendor Only)
 Add new menu item.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "name": "Biryani",
   "category": "Lunch",
@@ -595,19 +793,21 @@ JSON
   "stock": 20,
   "description": "Hyderabadi Biryani"
 }
-PUT /api/menu/:itemId (Vendor Only)
+```
+
+#### PUT /api/menu/:itemId (Vendor Only)
 Update menu item details.
 
-DELETE /api/menu/:itemId (Vendor Only)
+#### DELETE /api/menu/:itemId (Vendor Only)
 Remove menu item.
 
-Order Endpoints
-POST /api/orders
+### Order Endpoints
+
+#### POST /api/orders
 Create new order.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "items": [
     {"itemId": "item_001", "quantity": 2},
@@ -615,9 +815,10 @@ JSON
   ],
   "totalPrice": 285
 }
-Response:
+```
 
-JSON
+**Response:**
+```json
 {
   "success": true,
   "order": {
@@ -630,37 +831,41 @@ JSON
     "createdAt": "2026-05-29T10:30:00Z"
   }
 }
-GET /api/orders/:orderId
+```
+
+#### GET /api/orders/:orderId
 Get specific order details.
 
-GET /api/orders/student/:studentId
+#### GET /api/orders/student/:studentId
 Get all orders for a student.
 
-PUT /api/orders/:orderId/status
+#### PUT /api/orders/:orderId/status
 Update order status (Vendor Only).
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "status": "completed" // or "cancelled", "preparing"
 }
-POST /api/orders/:orderId/verify-qr
+```
+
+#### POST /api/orders/:orderId/verify-qr
 Verify QR code (Vendor scanner).
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "qrData": "encrypted_qr_data"
 }
-Analytics Endpoints
-GET /api/analytics/daily
+```
+
+### Analytics Endpoints
+
+#### GET /api/analytics/daily
 Get today's revenue and order count.
 
-Response:
-
-JSON
+**Response:**
+```json
 {
   "success": true,
   "data": {
@@ -669,12 +874,13 @@ JSON
     "date": "2026-05-29"
   }
 }
-GET /api/analytics/trends
+```
+
+#### GET /api/analytics/trends
 Get 30-day sales trends.
 
-Response:
-
-JSON
+**Response:**
+```json
 {
   "success": true,
   "data": {
@@ -683,12 +889,13 @@ JSON
     "orders": [5, 8, ...]
   }
 }
-GET /api/analytics/peak-hours
+```
+
+#### GET /api/analytics/peak-hours
 Get peak ordering times.
 
-Response:
-
-JSON
+**Response:**
+```json
 {
   "success": true,
   "peakHours": [
@@ -697,13 +904,15 @@ JSON
     {"hour": "18:00", "orders": 18}
   ]
 }
-Inventory Endpoints
-GET /api/inventory
+```
+
+### Inventory Endpoints
+
+#### GET /api/inventory
 Get raw material inventory.
 
-Response:
-
-JSON
+**Response:**
+```json
 {
   "success": true,
   "items": [
@@ -712,30 +921,34 @@ JSON
     {"name": "Eggs", "quantity": 200, "unit": "units"}
   ]
 }
-PUT /api/inventory/:itemId
+```
+
+#### PUT /api/inventory/:itemId
 Update inventory quantity.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "quantity": 45,
   "unit": "kg"
 }
-AI Advisor Endpoints
-POST /api/ai/recommend-meal
+```
+
+### AI Advisor Endpoints
+
+#### POST /api/ai/recommend-meal
 Get meal recommendations based on budget.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "budget": 100,
   "studentId": "std_001"
 }
-Response:
+```
 
-JSON
+**Response:**
+```json
 {
   "success": true,
   "recommendations": [
@@ -747,19 +960,21 @@ JSON
     }
   ]
 }
-POST /api/ai/ask-advisor
+```
+
+#### POST /api/ai/ask-advisor
 Ask AI business questions (multilingual).
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "question": "What should I prepare for tomorrow?",
   "language": "english" // or "tamil", "tanglish"
 }
-Response:
+```
 
-JSON
+**Response:**
+```json
 {
   "success": true,
   "response": "Based on your sales data, prepare...",
@@ -768,39 +983,48 @@ JSON
     "Chicken": "30kg"
   }
 }
-Payment Endpoints
-POST /api/payment/initiate
+```
+
+### Payment Endpoints
+
+#### POST /api/payment/initiate
 Initiate Razorpay payment.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "orderId": "ord_xyz789",
   "amount": 28500
 }
-Response:
+```
 
-JSON
+**Response:**
+```json
 {
   "success": true,
   "razorpayOrderId": "order_...",
   "amount": 28500
 }
-POST /api/payment/verify
+```
+
+#### POST /api/payment/verify
 Verify payment success.
 
-Request:
-
-JSON
+**Request:**
+```json
 {
   "razorpayOrderId": "order_...",
   "razorpayPaymentId": "pay_...",
   "razorpaySignature": "signature..."
 }
-💾 Database Schema
-Users Table
-SQL
+```
+
+---
+
+## 💾 Database Schema
+
+### Users Table
+```sql
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -812,8 +1036,10 @@ CREATE TABLE users (
   lastLogin DATETIME,
   isActive BOOLEAN DEFAULT 1
 );
-MenuItems Table
-SQL
+```
+
+### MenuItems Table
+```sql
 CREATE TABLE menu_items (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -826,8 +1052,10 @@ CREATE TABLE menu_items (
   updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   isActive BOOLEAN DEFAULT 1
 );
-Orders Table
-SQL
+```
+
+### Orders Table
+```sql
 CREATE TABLE orders (
   id TEXT PRIMARY KEY,
   studentId TEXT NOT NULL,
@@ -841,8 +1069,10 @@ CREATE TABLE orders (
   notes TEXT,
   FOREIGN KEY (studentId) REFERENCES users(id)
 );
-OrderItems Table
-SQL
+```
+
+### OrderItems Table
+```sql
 CREATE TABLE order_items (
   id TEXT PRIMARY KEY,
   orderId TEXT NOT NULL,
@@ -852,8 +1082,10 @@ CREATE TABLE order_items (
   FOREIGN KEY (orderId) REFERENCES orders(id),
   FOREIGN KEY (itemId) REFERENCES menu_items(id)
 );
-Inventory Table
-SQL
+```
+
+### Inventory Table
+```sql
 CREATE TABLE inventory (
   id TEXT PRIMARY KEY,
   name TEXT UNIQUE NOT NULL, -- "Rice", "Chicken", "Eggs", etc.
@@ -862,8 +1094,10 @@ CREATE TABLE inventory (
   minThreshold REAL,
   lastUpdated DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-Transactions Table
-SQL
+```
+
+### Transactions Table
+```sql
 CREATE TABLE transactions (
   id TEXT PRIMARY KEY,
   orderId TEXT NOT NULL,
@@ -875,8 +1109,10 @@ CREATE TABLE transactions (
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (orderId) REFERENCES orders(id)
 );
-OTP Table
-SQL
+```
+
+### OTP Table
+```sql
 CREATE TABLE otps (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL,
@@ -886,10 +1122,16 @@ CREATE TABLE otps (
   isUsed BOOLEAN DEFAULT 0,
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-🔄 Real-Time Features
-WebSocket Implementation
-Connection
-JavaScript
+```
+
+---
+
+## 🔄 Real-Time Features
+
+### WebSocket Implementation
+
+#### Connection
+```javascript
 // Client-side
 const socket = io('http://localhost:3000');
 
@@ -897,10 +1139,12 @@ socket.on('connect', () => {
   console.log('Connected to server');
   socket.emit('join', { userId: 'std_001', userType: 'student' });
 });
-Real-Time Events
-1. Stock Updates
+```
 
-JavaScript
+#### Real-Time Events
+
+**1. Stock Updates**
+```javascript
 // Server broadcasts to all clients
 socket.broadcast.emit('stock-updated', {
   itemId: 'item_001',
@@ -912,33 +1156,39 @@ socket.broadcast.emit('stock-updated', {
 socket.on('stock-updated', (data) => {
   updateUI(data);
 });
-2. Order Status Changes
+```
 
-JavaScript
+**2. Order Status Changes**
+```javascript
 // When order status changes
 socket.emit('order-status-change', {
   orderId: 'ord_xyz789',
   newStatus: 'preparing',
   studentId: 'std_001'
 });
-3. New Order Notification (Vendor)
+```
 
-JavaScript
+**3. New Order Notification (Vendor)**
+```javascript
 // Vendor receives notification
 socket.on('new-order', (orderData) => {
   playNotificationSound();
   displayOrderInQueue(orderData);
 });
-4. Menu Updates
+```
 
-JavaScript
+**4. Menu Updates**
+```javascript
 // When menu changes
 socket.broadcast.emit('menu-updated', {
   itemId: 'item_005',
   changes: { price: 165, description: 'Updated' }
 });
-Real-Time Sync Architecture
-Code
+```
+
+### Real-Time Sync Architecture
+
+```
 ┌─────────────┐                      ┌─────────────┐
 │  Student 1  │                      │  Student 2  │
 └──────┬──────┘                      └──────┬──────┘
@@ -964,103 +1214,135 @@ Code
        │   - Stock change → Update UI    │
        │   - Status update → Notify all  │
        └────────────────────────────────┘
-🔐 Security Features
-1. Authentication & Authorization
-Password Hashing: bcryptjs with salt rounds = 10
-JWT Tokens: Token-based session management
-Role-Based Access: Separate endpoints for student/vendor
-Token Expiry: 24-hour expiration with refresh mechanism
-2. Data Protection
-Input Validation: All user inputs validated before processing
-SQL Injection Prevention: Parameterized queries
-XSS Protection: HTML escaping on output
-CSRF Tokens: Included in forms
-3. Payment Security
-Razorpay Integration: PCI-compliant payment processing
-Payment Verification: Server-side signature verification
-Encrypted Transactions: HTTPS/TLS for all payments
-Order Verification: QR code encryption before delivery
-4. QR Code Security
-Encryption: Order details encrypted in QR code
-Time-Limited: QR codes expire after order completion
-One-Time Use: Each QR code valid only once
-Tamper Detection: QR integrity verified on scan
-5. Database Security
-Local Storage: Database on secure local machine
-Access Control: File permissions restrict access
-Backup: Automated database backups
-Recovery: Transaction logs for data recovery
-6. API Security
-Rate Limiting: Max requests per minute per IP
-CORS: Restricted cross-origin requests
-Headers: Security headers (X-Frame-Options, etc.)
-Logging: All API calls logged for audit
-⭐ Uniqueness & Innovation
-What Makes Campus Canteen Special
-1. Multilingual AI Advisor 🤖
-Unique Feature: AI understands English, Tamil, and Tanglish (Tamil-English mix)
-Innovation: First canteen system with code-switched language support
-Benefit: Inclusive for diverse student populations
-Example: Students can type "Naalaiku sales epdi irukum?" or "Tomorrow sales elaasa irukum?" and get responses
-2. Budget-Aware Meal Recommendations
-Unique Feature: AI generates optimal meal combinations within student's budget
-Innovation: Considers popularity, stock, student history
-Benefit: Helps students make better food choices
-Example: For ₹100 budget → Recommends "Biryani (₹80) + Lassi (₹20)"
-3. QR Code Receipt System 📲
-Unique Feature: Completely paperless ordering with encrypted QR codes
-Innovation: Order details embedded and encrypted in QR
-Benefit: No lost receipts, instant verification
-Security: Each QR valid only once, time-limited
-4. Real-Time Inventory Tracking 📊
-Unique Feature: Automatic ingredient deduction based on meal sales
-Innovation: Ingredient-level tracking (e.g., 1 Biryani = 0.5kg Rice + 0.2kg Chicken)
-Benefit: Vendors know exactly what to reorder
-Efficiency: Reduces food waste by 40% (estimated)
-5. Predictive Business Analytics 📈
-Unique Feature: AI predicts tomorrow's revenue and peak hours
-Innovation: Analyzes 30-day trends to forecast demand
-Benefit: Better staffing and preparation decisions
-Example: "Tomorrow will be 25% busier than average. Prepare 60kg Rice, 30kg Chicken"
-6. Spacebar Quick Completion ⌨️
-Unique Feature: Vendor can complete orders with single spacebar press
-Innovation: Designed for high-volume environments (100+ orders/hour)
-Benefit: Faster order processing, reduced queue time
-UX: Large order display optimized for scanning and processing
-7. Zero-Configuration Setup 🚀
-Unique Feature: Works with just batch file clicks, no command-line knowledge needed
-Innovation: All dependencies bundled, database auto-created
-Benefit: College staff can deploy without technical expertise
-Setup Time: < 3 minutes from extraction to running
-8. WebSocket-Powered Real-Time Sync ⚡
-Unique Feature: All screens update instantly without page refresh
-Innovation: Stock changes reflect immediately across all student apps
-Benefit: No "order out of stock" after checkout
-Performance: <500ms latency
-9. Ingredient-Based Meal Creation 🧅
-Unique Feature: Meals defined by their ingredients (recipes)
-Innovation: System auto-calculates available meals based on stock
-Example: If Biryani needs [Rice, Chicken], system checks both before allowing order
-Benefit: No overselling, accurate stock management
-10. Professional Vendor Dashboard 🏪
-Unique Feature: Dark theme, large text, optimized for 8+ hour days
-Innovation: Designed specifically for vendor ergonomics
-Benefit: Reduces eye strain, faster decision-making
-Features: Live charts, peak hour analysis, AI advisor
-Competitive Advantages
-Feature	Campus Canteen	Traditional Canteen	Competitor App
-Multilingual AI	✅ Tamil/English/Tanglish	❌ None	❌ English only
-QR Code Receipts	✅ Encrypted	❌ Paper	❌ Email/SMS
-Real-time Stock	✅ <500ms update	❌ Manual	✅ Yes, but basic
-Ingredient Tracking	✅ Automated deduction	❌ Manual	❌ Not available
-Predictive Analytics	✅ ML-based	❌ None	⚠️ Basic charts
-Setup Complexity	✅ 3 minutes	❌ 2-3 hours	⚠️ 30 minutes
-Cost	✅ Free/Open-source	✅ Free (manual)	❌ ₹10k-50k/month
-Offline Capability	✅ Local database	✅ Yes	❌ Cloud-only
-📦 Deployment Guide
-Windows Deployment
-1. Fresh Installation
-bash
+```
+
+---
+
+## 🔐 Security Features
+
+### 1. Authentication & Authorization
+- **Password Hashing**: bcryptjs with salt rounds = 10
+- **JWT Tokens**: Token-based session management
+- **Role-Based Access**: Separate endpoints for student/vendor
+- **Token Expiry**: 24-hour expiration with refresh mechanism
+
+### 2. Data Protection
+- **Input Validation**: All user inputs validated before processing
+- **SQL Injection Prevention**: Parameterized queries
+- **XSS Protection**: HTML escaping on output
+- **CSRF Tokens**: Included in forms
+
+### 3. Payment Security
+- **Razorpay Integration**: PCI-compliant payment processing
+- **Payment Verification**: Server-side signature verification
+- **Encrypted Transactions**: HTTPS/TLS for all payments
+- **Order Verification**: QR code encryption before delivery
+
+### 4. QR Code Security
+- **Encryption**: Order details encrypted in QR code
+- **Time-Limited**: QR codes expire after order completion
+- **One-Time Use**: Each QR code valid only once
+- **Tamper Detection**: QR integrity verified on scan
+
+### 5. Database Security
+- **Local Storage**: Database on secure local machine
+- **Access Control**: File permissions restrict access
+- **Backup**: Automated database backups
+- **Recovery**: Transaction logs for data recovery
+
+### 6. API Security
+- **Rate Limiting**: Max requests per minute per IP
+- **CORS**: Restricted cross-origin requests
+- **Headers**: Security headers (X-Frame-Options, etc.)
+- **Logging**: All API calls logged for audit
+
+---
+
+## ⭐ Uniqueness & Innovation
+
+### What Makes Campus Canteen Special
+
+#### 1. **Multilingual AI Advisor** 🤖
+- **Unique Feature**: AI understands English, Tamil, and Tanglish (Tamil-English mix)
+- **Innovation**: First canteen system with code-switched language support
+- **Benefit**: Inclusive for diverse student populations
+- **Example**: Students can type "Naalaiku sales epdi irukum?" or "Tomorrow sales elaasa irukum?" and get responses
+
+#### 2. **Budget-Aware Meal Recommendations**
+- **Unique Feature**: AI generates optimal meal combinations within student's budget
+- **Innovation**: Considers popularity, stock, student history
+- **Benefit**: Helps students make better food choices
+- **Example**: For ₹100 budget → Recommends "Biryani (₹80) + Lassi (₹20)"
+
+#### 3. **QR Code Receipt System** 📲
+- **Unique Feature**: Completely paperless ordering with encrypted QR codes
+- **Innovation**: Order details embedded and encrypted in QR
+- **Benefit**: No lost receipts, instant verification
+- **Security**: Each QR valid only once, time-limited
+
+#### 4. **Real-Time Inventory Tracking** 📊
+- **Unique Feature**: Automatic ingredient deduction based on meal sales
+- **Innovation**: Ingredient-level tracking (e.g., 1 Biryani = 0.5kg Rice + 0.2kg Chicken)
+- **Benefit**: Vendors know exactly what to reorder
+- **Efficiency**: Reduces food waste by 40% (estimated)
+
+#### 5. **Predictive Business Analytics** 📈
+- **Unique Feature**: AI predicts tomorrow's revenue and peak hours
+- **Innovation**: Analyzes 30-day trends to forecast demand
+- **Benefit**: Better staffing and preparation decisions
+- **Example**: "Tomorrow will be 25% busier than average. Prepare 60kg Rice, 30kg Chicken"
+
+#### 6. **Spacebar Quick Completion** ⌨️
+- **Unique Feature**: Vendor can complete orders with single spacebar press
+- **Innovation**: Designed for high-volume environments (100+ orders/hour)
+- **Benefit**: Faster order processing, reduced queue time
+- **UX**: Large order display optimized for scanning and processing
+
+#### 7. **Zero-Configuration Setup** 🚀
+- **Unique Feature**: Works with just batch file clicks, no command-line knowledge needed
+- **Innovation**: All dependencies bundled, database auto-created
+- **Benefit**: College staff can deploy without technical expertise
+- **Setup Time**: < 3 minutes from extraction to running
+
+#### 8. **WebSocket-Powered Real-Time Sync** ⚡
+- **Unique Feature**: All screens update instantly without page refresh
+- **Innovation**: Stock changes reflect immediately across all student apps
+- **Benefit**: No "order out of stock" after checkout
+- **Performance**: <500ms latency
+
+#### 9. **Ingredient-Based Meal Creation** 🧅
+- **Unique Feature**: Meals defined by their ingredients (recipes)
+- **Innovation**: System auto-calculates available meals based on stock
+- **Example**: If Biryani needs [Rice, Chicken], system checks both before allowing order
+- **Benefit**: No overselling, accurate stock management
+
+#### 10. **Professional Vendor Dashboard** 🏪
+- **Unique Feature**: Dark theme, large text, optimized for 8+ hour days
+- **Innovation**: Designed specifically for vendor ergonomics
+- **Benefit**: Reduces eye strain, faster decision-making
+- **Features**: Live charts, peak hour analysis, AI advisor
+
+### Competitive Advantages
+
+| Feature | Campus Canteen | Traditional Canteen | Competitor App |
+|---------|----------------|-------------------|-----------------|
+| Multilingual AI | ✅ Tamil/English/Tanglish | ❌ None | ❌ English only |
+| QR Code Receipts | ✅ Encrypted | ❌ Paper | ❌ Email/SMS |
+| Real-time Stock | ✅ <500ms update | ❌ Manual | ✅ Yes, but basic |
+| Ingredient Tracking | ✅ Automated deduction | ❌ Manual | ❌ Not available |
+| Predictive Analytics | ✅ ML-based | ❌ None | ⚠️ Basic charts |
+| Setup Complexity | ✅ 3 minutes | ❌ 2-3 hours | ⚠️ 30 minutes |
+| Cost | ✅ Free/Open-source | ✅ Free (manual) | ❌ ₹10k-50k/month |
+| Offline Capability | ✅ Local database | ✅ Yes | ❌ Cloud-only |
+
+---
+
+## 📦 Deployment Guide
+
+### Windows Deployment
+
+#### 1. **Fresh Installation**
+```bash
 # Step 1: Copy entire folder to target machine
 # Example: C:\canteen-system\
 
@@ -1072,47 +1354,58 @@ bash
 
 # Step 4: Use student and vendor apps
 # Endpoints automatically discovered
-2. Server Management
-Starting the Server:
+```
 
-bash
+#### 2. **Server Management**
+
+**Starting the Server:**
+```bash
 # Using batch file:
 Double-click: start-server.bat
 
 # Or manually:
 cd backend
 npm start
-Stopping the Server:
+```
 
-bash
+**Stopping the Server:**
+```bash
 # Press Ctrl + C in the server window
 # OR close the terminal window
-Restarting:
+```
 
-bash
+**Restarting:**
+```bash
 # Close previous server window
 # Double-click start-server.bat again
-3. Database Management
-Backup Database:
+```
 
-bash
+#### 3. **Database Management**
+
+**Backup Database:**
+```bash
 # Database file location: backend/database.db
 # Copy database.db to backup location
 # Schedule backup using Windows Task Scheduler
-Restore Database:
+```
 
-bash
+**Restore Database:**
+```bash
 # Close server
 # Copy backup database.db to backend/ folder
 # Restart server
-Reset Database:
+```
 
-bash
+**Reset Database:**
+```bash
 # Close server
 # Delete: backend/database.db
 # Restart server (new database created automatically)
-Linux/Mac Deployment
-bash
+```
+
+### Linux/Mac Deployment
+
+```bash
 # Install Node.js
 # Visit https://nodejs.org/
 
@@ -1130,8 +1423,11 @@ npm start
 # In another terminal, start frontend
 # Serve student-app and vendor-dashboard using simple HTTP server
 # Or open HTML files directly in browser
-Docker Deployment (Optional)
-Dockerfile
+```
+
+### Docker Deployment (Optional)
+
+```dockerfile
 # Dockerfile
 FROM node:14-alpine
 
@@ -1144,37 +1440,45 @@ RUN npm install
 EXPOSE 3000
 
 CMD ["npm", "start"]
-bash
+```
+
+```bash
 # Build image
 docker build -t campus-canteen .
 
 # Run container
 docker run -p 3000:3000 -v /app/backend/database.db:/app/backend/database.db campus-canteen
-🔧 Troubleshooting
-Common Issues & Solutions
-1. "npm not recognized"
-Error: Command not found when running npm commands
+```
 
-Solution:
+---
 
-Install Node.js from https://nodejs.org/
-Restart terminal after installation
-Verify: Open terminal, type node --version
-2. "Module not found"
-Error: Cannot find module 'express', 'socket.io', etc.
+## 🔧 Troubleshooting
 
-Solution:
+### Common Issues & Solutions
 
-bash
+#### 1. "npm not recognized"
+**Error:** Command not found when running npm commands
+
+**Solution:**
+- Install Node.js from https://nodejs.org/
+- Restart terminal after installation
+- Verify: Open terminal, type `node --version`
+
+#### 2. "Module not found"
+**Error:** Cannot find module 'express', 'socket.io', etc.
+
+**Solution:**
+```bash
 cd backend
 npm install
 # OR run install-backend.bat again
-3. "Port 3000 already in use"
-Error: Server fails to start because port is taken
+```
 
-Solution:
+#### 3. "Port 3000 already in use"
+**Error:** Server fails to start because port is taken
 
-bash
+**Solution:**
+```bash
 # Find process using port 3000:
 netstat -ano | findstr :3000
 
@@ -1184,77 +1488,83 @@ taskkill /PID <process_id> /F
 # OR change port in server.js:
 # Change: const PORT = 3000
 # To: const PORT = 3001
-4. "Camera not working" (QR Scanner)
-Error: Vendor dashboard cannot access webcam
+```
 
-Solution:
+#### 4. "Camera not working" (QR Scanner)
+**Error:** Vendor dashboard cannot access webcam
 
-Check camera permissions in Windows settings
-Try using Chrome browser instead of Edge
-Grant permission when browser asks
-Restart browser after permission change
-5. "Cannot find payment config"
-Error: Razorpay key missing
+**Solution:**
+- Check camera permissions in Windows settings
+- Try using Chrome browser instead of Edge
+- Grant permission when browser asks
+- Restart browser after permission change
 
-Solution:
+#### 5. "Cannot find payment config"
+**Error:** Razorpay key missing
 
-JavaScript
+**Solution:**
+```javascript
 // In backend/server.js, set test keys:
 RAZORPAY_KEY_ID: 'rzp_test_...'
 RAZORPAY_KEY_SECRET: 'your_secret_key'
 // Get keys from https://dashboard.razorpay.com/
-6. "CORS error in browser console"
-Error: Cross-origin request blocked
+```
 
-Solution:
+#### 6. "CORS error in browser console"
+**Error:** Cross-origin request blocked
 
-JavaScript
+**Solution:**
+```javascript
 // In server.js, add CORS:
 const cors = require('cors');
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:5000'],
   credentials: true
 }));
-7. "Database locked" error
-Error: SQLite database is locked by another process
+```
 
-Solution:
+#### 7. "Database locked" error
+**Error:** SQLite database is locked by another process
 
-bash
+**Solution:**
+```bash
 # Close all server instances
 # Check if multiple npm start processes running
 # Restart backend: start-server.bat
 # If persists, delete database.db and restart
-8. "QR code not generating"
-Error: QR code display is blank
+```
 
-Solution:
+#### 8. "QR code not generating"
+**Error:** QR code display is blank
 
-Ensure qrcode.js library included: <script src="qrcode.min.js"></script>
-Check browser console for JavaScript errors
-Verify order ID is present before QR generation
-9. "Students see old menu items"
-Error: Menu not updating in real-time
+**Solution:**
+- Ensure qrcode.js library included: `<script src="qrcode.min.js"></script>`
+- Check browser console for JavaScript errors
+- Verify order ID is present before QR generation
 
-Solution:
+#### 9. "Students see old menu items"
+**Error:** Menu not updating in real-time
 
-Check WebSocket connection: socket.connected in browser console
-Verify server is running (check terminal)
-Clear browser cache: Ctrl + Shift + Delete
-Hard refresh: Ctrl + Shift + R
-10. "Vendor doesn't see new orders"
-Error: Orders not appearing on vendor dashboard
+**Solution:**
+- Check WebSocket connection: `socket.connected` in browser console
+- Verify server is running (check terminal)
+- Clear browser cache: Ctrl + Shift + Delete
+- Hard refresh: Ctrl + Shift + R
 
-Solution:
+#### 10. "Vendor doesn't see new orders"
+**Error:** Orders not appearing on vendor dashboard
 
-Check if vendor is logged in
-Verify students are completing checkout
-Check server logs for errors
-Ensure WebSocket connection is active
-Refresh vendor dashboard (F5)
-Debug Mode
-Enable Verbose Logging
-JavaScript
+**Solution:**
+- Check if vendor is logged in
+- Verify students are completing checkout
+- Check server logs for errors
+- Ensure WebSocket connection is active
+- Refresh vendor dashboard (F5)
+
+### Debug Mode
+
+#### Enable Verbose Logging
+```javascript
 // In server.js:
 const DEBUG = true;
 
@@ -1263,38 +1573,52 @@ if (DEBUG) {
   console.log('💾 Saving to database...');
   console.log('📢 Broadcasting to vendor...');
 }
-Check Server Logs
-bash
+```
+
+#### Check Server Logs
+```bash
 # Server terminal shows:
 # [Request] POST /api/orders
 # [Database] Insert order_xyz789
 # [WebSocket] Emit order-received to vendor_001
-Browser Console Debugging
-JavaScript
+```
+
+#### Browser Console Debugging
+```javascript
 // Open DevTools: F12
 // Console tab shows:
 // ✅ Connected to socket server
 // ✅ Stock updated: item_001 → 10 items
 // ✅ Order submitted: ord_xyz789
-🚀 Future Enhancements
-Planned Features
-Phase 2 (Q3 2026)
- Mobile App: Native iOS/Android application
- Push Notifications: Real-time order updates on phones
- Loyalty Program: Points/rewards system
- Payment Options: Cash, Wallet, Card payment methods
-Phase 3 (Q4 2026)
- Multi-Canteen Support: Multiple canteens, one system
- Advanced Analytics: Profit margins, staff efficiency
- Feedback System: Student ratings and reviews
- Complaint Management: Issue tracking system
-Phase 4 (2027)
- Integration: ERP system integration for colleges
- Delivery: Food delivery outside campus
- Subscription Plans: Monthly meal plans
- Catering: Event catering module
-Enhancement Roadmap
-Code
+```
+
+---
+
+## 🚀 Future Enhancements
+
+### Planned Features
+
+#### Phase 2 (Q3 2026)
+- [ ] **Mobile App**: Native iOS/Android application
+- [ ] **Push Notifications**: Real-time order updates on phones
+- [ ] **Loyalty Program**: Points/rewards system
+- [ ] **Payment Options**: Cash, Wallet, Card payment methods
+
+#### Phase 3 (Q4 2026)
+- [ ] **Multi-Canteen Support**: Multiple canteens, one system
+- [ ] **Advanced Analytics**: Profit margins, staff efficiency
+- [ ] **Feedback System**: Student ratings and reviews
+- [ ] **Complaint Management**: Issue tracking system
+
+#### Phase 4 (2027)
+- [ ] **Integration**: ERP system integration for colleges
+- [ ] **Delivery**: Food delivery outside campus
+- [ ] **Subscription Plans**: Monthly meal plans
+- [ ] **Catering**: Event catering module
+
+### Enhancement Roadmap
+
+```
 2026-Q2: Current Version (v1.0)
 ├── Core ordering system ✅
 ├── Vendor dashboard ✅
@@ -1318,15 +1642,23 @@ Code
 ├── Delivery system
 ├── Subscription plans
 └── Catering module
-🤝 Contributing
-How to Contribute
-Report Bugs: Create GitHub issue with details
-Suggest Features: Open feature request issue
-Code Contributions: Fork, branch, commit, push, PR
-Documentation: Help improve README and guides
-Testing: Test features and report issues
-Development Setup
-bash
+```
+
+---
+
+## 🤝 Contributing
+
+### How to Contribute
+
+1. **Report Bugs**: Create GitHub issue with details
+2. **Suggest Features**: Open feature request issue
+3. **Code Contributions**: Fork, branch, commit, push, PR
+4. **Documentation**: Help improve README and guides
+5. **Testing**: Test features and report issues
+
+### Development Setup
+
+```bash
 # Clone repository
 git clone https://github.com/yourusername/Campus-Canteen.git
 cd Campus-Canteen
@@ -1344,16 +1676,23 @@ git push origin feature/your-feature-name
 
 # Create Pull Request
 # Describe changes in PR template
-Code Style
-JavaScript: Follow Airbnb style guide
-Comments: Clear, concise documentation
-Functions: Keep <50 lines, single responsibility
-Variables: Meaningful names (camelCase for JS)
-Testing: Include test cases for new features
-📄 License
+```
+
+### Code Style
+
+- **JavaScript**: Follow Airbnb style guide
+- **Comments**: Clear, concise documentation
+- **Functions**: Keep <50 lines, single responsibility
+- **Variables**: Meaningful names (camelCase for JS)
+- **Testing**: Include test cases for new features
+
+---
+
+## 📄 License
+
 This project is open-source and available under the MIT License.
 
-Code
+```
 MIT License
 
 Copyright (c) 2026 LORDMOSTER
@@ -1371,39 +1710,58 @@ copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-📞 Support & Contact
-Issues: Create GitHub issue for bugs/features
-Email: lordmoster@example.com
-Documentation: See WINDOWS_SETUP_GUIDE.md
-FAQ: See QUICK_REFERENCE.md
-🙏 Acknowledgments
-Inspiration: Traditional college canteen operations
-Community: Open-source tools and libraries
-Users: College students and vendors
-Contributors: All who support this project
-📊 Project Statistics
-Lines of Code: ~5,000+
-Files: 15+
-Database Tables: 7
-API Endpoints: 25+
-Features: 30+
-Time to Setup: 3 minutes
-Setup Complexity: Very Easy
-🎓 Learning Outcomes
+```
+
+---
+
+## 📞 Support & Contact
+
+- **Issues**: Create GitHub issue for bugs/features
+- **Email**: lordmoster@example.com
+- **Documentation**: See WINDOWS_SETUP_GUIDE.md
+- **FAQ**: See QUICK_REFERENCE.md
+
+---
+
+## 🙏 Acknowledgments
+
+- **Inspiration**: Traditional college canteen operations
+- **Community**: Open-source tools and libraries
+- **Users**: College students and vendors
+- **Contributors**: All who support this project
+
+---
+
+## 📊 Project Statistics
+
+- **Lines of Code**: ~5,000+
+- **Files**: 15+
+- **Database Tables**: 7
+- **API Endpoints**: 25+
+- **Features**: 30+
+- **Time to Setup**: 3 minutes
+- **Setup Complexity**: Very Easy
+
+---
+
+## 🎓 Learning Outcomes
+
 Building Campus Canteen teaches:
+- ✅ Full-stack web development
+- ✅ Real-time WebSocket programming
+- ✅ Database design and management
+- ✅ RESTful API design
+- ✅ Authentication & security
+- ✅ Payment gateway integration
+- ✅ AI/ML integration basics
+- ✅ Project deployment
+- ✅ Business logic implementation
+- ✅ User experience design
 
-✅ Full-stack web development
-✅ Real-time WebSocket programming
-✅ Database design and management
-✅ RESTful API design
-✅ Authentication & security
-✅ Payment gateway integration
-✅ AI/ML integration basics
-✅ Project deployment
-✅ Business logic implementation
-✅ User experience design
-Last Updated: May 29, 2026
-Version: 1.0.0
-Maintained By: LORDMOSTER
+---
 
-🍜 Happy Ordering! 🎉
+**Last Updated**: May 29, 2026  
+**Version**: 1.0.0  
+**Maintained By**: LORDMOSTER
+
+🍜 **Happy Ordering!** 🎉
